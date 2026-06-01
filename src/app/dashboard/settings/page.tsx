@@ -121,7 +121,7 @@ function SettingsForm({
           <Input
             placeholder="Business Name"
             value={settings.businessProfile.businessName}
-            disabled={!!settings.businessProfile.businessName}
+            // disabled={!!settings.businessProfile.businessName}
             onChange={(e) =>
               setSettings({
                 ...settings,
@@ -136,7 +136,7 @@ function SettingsForm({
           <Input
             placeholder="Proprietor Name"
             value={settings.businessProfile.proprietorName}
-            disabled={!!settings.businessProfile.proprietorName}
+            // disabled={!!settings.businessProfile.proprietorName}
             onChange={(e) =>
               setSettings({
                 ...settings,
@@ -151,7 +151,7 @@ function SettingsForm({
           <Input
             placeholder="GSTIN"
             value={settings.businessProfile.gstin}
-            disabled={!!settings.businessProfile.gstin}
+            // disabled={!!settings.businessProfile.gstin}
             onChange={(e) =>
               setSettings({
                 ...settings,
@@ -166,7 +166,7 @@ function SettingsForm({
           <Input
             placeholder="Phone"
             value={settings.businessProfile.phone}
-            disabled={!!settings.businessProfile.phone}
+            // disabled={!!settings.businessProfile.phone}
             onChange={(e) =>
               setSettings({
                 ...settings,
@@ -181,7 +181,7 @@ function SettingsForm({
           <Input
             placeholder="Email"
             value={settings.businessProfile.email}
-            disabled={true}
+            // disabled={true}
             onChange={(e) =>
               setSettings({
                 ...settings,
@@ -196,7 +196,7 @@ function SettingsForm({
           <Input
             placeholder="City"
             value={settings.businessProfile.city}
-            disabled={!!settings.businessProfile.city}
+            // disabled={!!settings.businessProfile.city}
             onChange={(e) =>
               setSettings({
                 ...settings,
@@ -211,7 +211,7 @@ function SettingsForm({
           <Input
             placeholder="State"
             value={settings.businessProfile.state}
-            disabled={!!settings.businessProfile.state}
+            // disabled={!!settings.businessProfile.state}
             onChange={(e) =>
               setSettings({
                 ...settings,
@@ -226,7 +226,7 @@ function SettingsForm({
           <Input
             placeholder="Pincode"
             value={settings.businessProfile.pincode}
-            disabled={!!settings.businessProfile.pincode}
+            // disabled={!!settings.businessProfile.pincode}
             onChange={(e) =>
               setSettings({
                 ...settings,
@@ -243,7 +243,7 @@ function SettingsForm({
           className="mt-4"
           placeholder="Business Address"
           value={settings.businessProfile.address}
-          disabled={!!settings.businessProfile.address}
+          // disabled={!!settings.businessProfile.address}
           onChange={(e) =>
             setSettings({
               ...settings,
@@ -393,7 +393,7 @@ function SettingsForm({
       <div>
         <button
           onClick={handleSave}
-          disabled={saving}
+          // disabled={saving}
           className="rounded-full bg-primary px-4 py-2 text-primary-foreground cursor-pointer hover:bg-primary/80 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {saving ? "Saving..." : "Save Settings"}

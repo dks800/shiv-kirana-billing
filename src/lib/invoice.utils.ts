@@ -17,14 +17,13 @@ export const handleInvoiceEdit = (
   router: AppRouterInstance,
 ) => {
   e.stopPropagation();
-  router.push(`/dashboard/invoices/${invoiceId}/edit`);
+  router.push(`/dashboard/invoices/edit?id=${invoiceId}`);
 };
 
 export const handleInvoiceView = (id: string, router: AppRouterInstance) => {
   if (!id?.trim()) return router.push(`/dashboard`);
-  return router.push(`/dashboard/invoices/${id}`);
+  router.push(`/dashboard/invoices/details?id=${id}`);
 };
-
 
 export function toInvoiceDate(value: Invoice["invoiceDate"]) {
   if (!value) {

@@ -119,7 +119,6 @@ export function ReportsPageContent() {
       </div>
 
       <div className="grid min-w-0 gap-5 xl:grid-cols-2">
-        Deepak
         <GSTReport
           rows={reportData.gstReport.breakdown}
           totalTaxableValue={reportData.gstReport.totalTaxableValue}
