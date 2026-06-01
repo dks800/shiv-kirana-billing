@@ -46,7 +46,7 @@ export function InvoiceDetails({ invoiceId }: InvoiceDetailsProps) {
 
   return (
     <div
-      className="mx-auto max-w-6xl space-y-6 rounded-xl"
+      className="mx-auto space-y-6 rounded-xl"
     >
       <InvoiceHeader invoice={invoice!} />
       <InvoiceCustomerDetails invoice={invoice!} />
