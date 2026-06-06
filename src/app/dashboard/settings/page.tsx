@@ -58,11 +58,7 @@ function ChangeNote({ show }: { show: boolean }) {
 }
 
 export default function SettingsPage() {
-  const {
-    settings: activeSettings,
-    loading,
-    updateSettings,
-  } = useSettings();
+  const { settings: activeSettings, loading, updateSettings } = useSettings();
 
   if (loading) {
     return <Loader />;
@@ -85,6 +81,7 @@ function SettingsForm({
   updateSettings: (nextSettings: AppSettings) => Promise<AppSettings>;
 }) {
   const [settings, setSettings] = useState<AppSettings>(activeSettings);
+  console.log("settings --->>", settings);
   const [appliedSettings, setAppliedSettings] =
     useState<AppSettings>(activeSettings);
 
@@ -121,121 +118,121 @@ function SettingsForm({
           <Input
             placeholder="Business Name"
             value={settings.businessProfile.businessName}
-            // disabled={!!settings.businessProfile.businessName}
-            onChange={(e) =>
-              setSettings({
-                ...settings,
-                businessProfile: {
-                  ...settings.businessProfile,
-                  businessName: e.target.value,
-                },
-              })
-            }
+            disabled={!!settings.businessProfile.businessName}
+            // onChange={(e) =>
+            //   setSettings({
+            //     ...settings,
+            //     businessProfile: {
+            //       ...settings.businessProfile,
+            //       businessName: e.target.value,
+            //     },
+            //   })
+            // }
           />
 
           <Input
             placeholder="Proprietor Name"
             value={settings.businessProfile.proprietorName}
-            // disabled={!!settings.businessProfile.proprietorName}
-            onChange={(e) =>
-              setSettings({
-                ...settings,
-                businessProfile: {
-                  ...settings.businessProfile,
-                  proprietorName: e.target.value,
-                },
-              })
-            }
+            disabled={!!settings.businessProfile.proprietorName}
+            // onChange={(e) =>
+            //   setSettings({
+            //     ...settings,
+            //     businessProfile: {
+            //       ...settings.businessProfile,
+            //       proprietorName: e.target.value,
+            //     },
+            //   })
+            // }
           />
 
           <Input
             placeholder="GSTIN"
             value={settings.businessProfile.gstin}
-            // disabled={!!settings.businessProfile.gstin}
-            onChange={(e) =>
-              setSettings({
-                ...settings,
-                businessProfile: {
-                  ...settings.businessProfile,
-                  gstin: e.target.value,
-                },
-              })
-            }
+            disabled={!!settings.businessProfile.gstin}
+            // onChange={(e) =>
+            //   setSettings({
+            //     ...settings,
+            //     businessProfile: {
+            //       ...settings.businessProfile,
+            //       gstin: e.target.value,
+            //     },
+            //   })
+            // }
           />
 
           <Input
             placeholder="Phone"
             value={settings.businessProfile.phone}
-            // disabled={!!settings.businessProfile.phone}
-            onChange={(e) =>
-              setSettings({
-                ...settings,
-                businessProfile: {
-                  ...settings.businessProfile,
-                  phone: e.target.value,
-                },
-              })
-            }
+            disabled={!!settings.businessProfile.phone}
+            // onChange={(e) =>
+            //   setSettings({
+            //     ...settings,
+            //     businessProfile: {
+            //       ...settings.businessProfile,
+            //       phone: e.target.value,
+            //     },
+            //   })
+            // }
           />
 
           <Input
             placeholder="Email"
             value={settings.businessProfile.email}
-            // disabled={true}
-            onChange={(e) =>
-              setSettings({
-                ...settings,
-                businessProfile: {
-                  ...settings.businessProfile,
-                  email: e.target.value,
-                },
-              })
-            }
+            disabled={!!settings.businessProfile.email}
+            // onChange={(e) =>
+            //   setSettings({
+            //     ...settings,
+            //     businessProfile: {
+            //       ...settings.businessProfile,
+            //       email: e.target.value,
+            //     },
+            //   })
+            // }
           />
 
           <Input
             placeholder="City"
             value={settings.businessProfile.city}
-            // disabled={!!settings.businessProfile.city}
-            onChange={(e) =>
-              setSettings({
-                ...settings,
-                businessProfile: {
-                  ...settings.businessProfile,
-                  city: e.target.value,
-                },
-              })
-            }
+            disabled={!!settings.businessProfile.city}
+            // onChange={(e) =>
+            //   setSettings({
+            //     ...settings,
+            //     businessProfile: {
+            //       ...settings.businessProfile,
+            //       city: e.target.value,
+            //     },
+            //   })
+            // }
           />
 
           <Input
             placeholder="State"
             value={settings.businessProfile.state}
-            // disabled={!!settings.businessProfile.state}
-            onChange={(e) =>
-              setSettings({
-                ...settings,
-                businessProfile: {
-                  ...settings.businessProfile,
-                  state: e.target.value,
-                },
-              })
-            }
+            disabled={!!settings.businessProfile.state}
+            // onChange={(e) =>
+            //   setSettings({
+            //     ...settings,
+            //     businessProfile: {
+            //       ...settings.businessProfile,
+            //       state: e.target.value,
+            //     },
+            //   })
+            // }
           />
 
           <Input
             placeholder="Pincode"
             value={settings.businessProfile.pincode}
-            // disabled={!!settings.businessProfile.pincode}
-            onChange={(e) =>
-              setSettings({
-                ...settings,
-                businessProfile: {
-                  ...settings.businessProfile,
-                  pincode: e.target.value,
-                },
-              })
-            }
+            disabled={!!settings.businessProfile.pincode}
+            // onChange={(e) =>
+            //   setSettings({
+            //     ...settings,
+            //     businessProfile: {
+            //       ...settings.businessProfile,
+            //       pincode: e.target.value,
+            //     },
+            //   })
+            // }
           />
         </div>
 
@@ -243,16 +240,16 @@ function SettingsForm({
           className="mt-4"
           placeholder="Business Address"
           value={settings.businessProfile.address}
-          // disabled={!!settings.businessProfile.address}
-          onChange={(e) =>
-            setSettings({
-              ...settings,
-              businessProfile: {
-                ...settings.businessProfile,
-                address: e.target.value,
-              },
-            })
-          }
+          disabled={!!settings.businessProfile.address}
+          // onChange={(e) =>
+          //   setSettings({
+          //     ...settings,
+          //     businessProfile: {
+          //       ...settings.businessProfile,
+          //       address: e.target.value,
+          //     },
+          //   })
+          // }
         />
         <ChangeNote
           show={hasSectionChanges(
@@ -299,7 +296,9 @@ function SettingsForm({
           />
           Show Amount In Words
         </label>
-        <ChangeNote show={hasSectionChanges(settings.pdf, appliedSettings.pdf)} />
+        <ChangeNote
+          show={hasSectionChanges(settings.pdf, appliedSettings.pdf)}
+        />
       </div>
 
       {/* PREFERENCES */}

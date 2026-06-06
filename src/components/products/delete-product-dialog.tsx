@@ -36,19 +36,12 @@ export function DeleteProductDialog({
   onConfirm,
 }: DeleteProductDialogProps) {
   return (
-    <AlertDialog
-      open={open}
-      onOpenChange={onOpenChange}
-    >
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent className="rounded-2xl">
         <AlertDialogHeader>
-          <AlertDialogTitle>
-            {title}
-          </AlertDialogTitle>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
 
-          <AlertDialogDescription>
-            {description}
-          </AlertDialogDescription>
+          <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
 
         <AlertDialogFooter>
@@ -57,12 +50,7 @@ export function DeleteProductDialog({
           </AlertDialogCancel>
 
           <AlertDialogAction
-            className="
-              cursor-pointer
-              bg-destructive
-              text-background
-              hover:bg-destructive/90
-            "
+            className="cursor-pointer text-destructive border-destructive/30 bg-destructive/10 hover:text-destructive hover:bg-destructive/20"
             onClick={async (e) => {
               e.preventDefault();
 
@@ -70,9 +58,7 @@ export function DeleteProductDialog({
             }}
             disabled={isLoading}
           >
-            {isLoading
-              ? "Deleting..."
-              : "Delete"}
+            {isLoading ? "Deleting..." : "Delete"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

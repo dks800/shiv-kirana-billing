@@ -30,27 +30,27 @@ import { useIsMobile } from "@/hooks/useIsMobile";
 const navItems = [
   {
     label: "Dashboard",
-    href: "/dashboard",
+    href: "/dashboard/",
     icon: LayoutDashboard,
   },
   {
     label: "Sale Invoices",
-    href: "/dashboard/invoices",
+    href: "/dashboard/invoices/",
     icon: FileText,
   },
   {
     label: "Products",
-    href: "/dashboard/products",
+    href: "/dashboard/products/",
     icon: Package,
   },
   {
     label: "Reports",
-    href: "/dashboard/reports",
+    href: "/dashboard/reports/",
     icon: BarChart3,
   },
   {
     label: "Settings",
-    href: "/dashboard/settings",
+    href: "/dashboard/settings/",
     icon: Settings,
   },
 ];
@@ -116,8 +116,10 @@ export default function DashboardLayout({
             {navItems.map((item) => {
               const Icon = item.icon;
 
-              const isActive = pathname === item.href;
-
+              const segments = item.href.split('/').filter(Boolean);
+              const isActive = segments.length === 1 
+                ? pathname === item.href 
+                : pathname.startsWith(item.href);
               return (
                 <Link
                   key={item.href}
@@ -142,7 +144,7 @@ export default function DashboardLayout({
             <Button
               variant="outline"
               onClick={handleLogout}
-              className="w-full justify-start gap-2 cursor-pointer transition-colors hover:bg-primary/10"
+              className="w-full justify-start gap-2 cursor-pointer transition-colors text-destructive bg-destructive/10 hover:bg-destructive/20 border-destructive/30"
             >
               <LogOut className="h-4 w-4" />
               Logout
@@ -164,7 +166,7 @@ export default function DashboardLayout({
             <div className="flex gap-2 justify-between  w-full">
               <h2 className="text-lg font-semibold">Dashboard</h2>
               <button
-                className="flex gap-2 items-center bg-secondary p-2 rounded-xl cursor-pointer hover:bg-primary/10"
+                className="flex gap-2 items-center p-2 rounded-xl cursor-pointer text-destructive bg-destructive/10 hover:bg-destructive/20 border-destructive/30"
                 onClick={handleLogout}
               >
                 <LogOut className="h-4 w-4" /> {isMobile ? "" : "Logout"}

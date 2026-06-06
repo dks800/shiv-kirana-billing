@@ -12,12 +12,14 @@ import {
 } from "@/components/ui/table";
 import { Invoice } from "@/types/invoice.types";
 import { formatDate, formatIndianCurrency } from "@/lib/utils";
-import { Edit, Trash } from "lucide-react";
+import { Download, Edit, Trash } from "lucide-react";
 import { Button } from "../ui/button";
 import { handleInvoiceEdit, handleInvoiceView } from "@/lib/invoice.utils";
 import { DeleteProductDialog } from "../products/delete-product-dialog";
 import { useState } from "react";
 import { deleteInvoice } from "@/services/invoice.service";
+import { downloadInvoicePrintPdf } from "@/lib/exports/invoice-print-pdf";
+import toast from "react-hot-toast";
 
 interface InvoiceTableProps {
   invoices: Invoice[];
@@ -25,6 +27,7 @@ interface InvoiceTableProps {
 
 export function InvoiceTable({ invoices }: InvoiceTableProps) {
   const router = useRouter();
+  const [printing, setPrinting] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(
     null,
@@ -44,6 +47,24 @@ export function InvoiceTable({ invoices }: InvoiceTableProps) {
     setSelectedInvoiceId(null);
     setDeleteOpen(false);
   };
+
+  function handlePrintInvoice(e: React.MouseEvent<HTMLButtonElement>, invoice: Invoice) {
+    e.stopPropagation();
+    try {
+      setPrinting(true);
+      downloadInvoicePrintPdf(invoice);
+      toast.success("Invoice PDF downloaded");
+    } catch (error) {
+      console.error(error);
+      toast.error(
+        `Failed to print invoice - ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
+      );
+    } finally {
+      setPrinting(false);
+    }
+  }
 
   return (
     <div className="rounded-xl border bg-card text-card-foreground">
@@ -100,6 +121,15 @@ export function InvoiceTable({ invoices }: InvoiceTableProps) {
                   size="sm"
                 >
                   <Trash className="h-4 w-4" /> <span>Delete</span>
+                </Button>
+                <Button
+                  onClick={(e) => handlePrintInvoice(e, invoice)}
+                  className="flex gap-2 items-center cursor-pointer text-success border-success/30 bg-success/10 hover:text-success hover:bg-success/20"
+                  variant="outline"
+                  size="sm"
+                  disabled={printing}
+                >
+                  <Download className="h-4 w-4" /> <span>{printing ? "Printing..." : "Print"}</span>
                 </Button>
               </TableCell>
             </TableRow>

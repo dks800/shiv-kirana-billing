@@ -169,7 +169,7 @@ export function InvoiceList() {
           <Button
             type="button"
             variant="outline"
-            className="cursor-pointer hover:bg-primary/10"
+            className="cursor-pointer hover:bg-success/20 bg-success/20 text-success border-success/30"
             onClick={handleExportInvoiceList}
             disabled={!filteredInvoices.length}
           >

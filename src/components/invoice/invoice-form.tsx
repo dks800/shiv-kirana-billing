@@ -606,9 +606,7 @@ export function InvoiceForm({
   );
 
   if (loadingInvoice) {
-    return (
-        <Loader />
-    );
+    return <Loader />;
   }
 
   if (mode === "edit" && !invoiceId) {
@@ -691,12 +689,12 @@ export function InvoiceForm({
         </Dialog>
 
         <div className="space-y-3">
-          {customerDetails?.customerName ? (
+          {(mode === "create" || customerDetails?.customerName) && (
             <CustomerDetailsForm
               value={customerDetails}
               onChange={setCustomerDetails}
             />
-          ) : null}
+          )}
           <div className="grid gap-3 md:grid-cols-2">
             <label className="space-y-1 text-sm">
               <span>Invoice date</span>
