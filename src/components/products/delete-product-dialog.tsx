@@ -10,6 +10,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Trash2 } from "lucide-react";
 
 interface DeleteProductDialogProps {
   open: boolean;
@@ -58,6 +59,7 @@ export function DeleteProductDialog({
             }}
             disabled={isLoading}
           >
+            <Trash2 className="mr-2 h-4 w-4" />
             {isLoading ? "Deleting..." : "Delete"}
           </AlertDialogAction>
         </AlertDialogFooter>

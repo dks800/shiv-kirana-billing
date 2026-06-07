@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Download, Edit, Trash } from "lucide-react";
+import { ArrowLeft, Download, Edit, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 
 import { Button } from "@/components/ui/button";
@@ -75,7 +75,7 @@ export function InvoiceHeader({ invoice }: InvoiceHeaderProps) {
         >
           <div className="space-y-3">
             <Button
-              variant="ghost"
+              variant="outline"
               className="w-fit cursor-pointer"
               onClick={() => router.back()}
             >
@@ -84,21 +84,19 @@ export function InvoiceHeader({ invoice }: InvoiceHeaderProps) {
             </Button>
 
             <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold">
-                  Invoice No: {invoice.invoiceNumber}
-                </h1>
-              </div>
+              <h1 className="text-2xl font-bold">
+                Invoice No: {invoice.invoiceNumber}
+              </h1>
 
               <p className="mt-1 text-sm text-muted-foreground">
                 Date: {formatDate(invoice.createdAt)}
               </p>
             </div>
           </div>
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-end gap-3 flex-wrap">
             <Button
               variant="outline"
-              className="cursor-pointer text-success border-success/30 bg-success/10 hover:text-success hover:bg-success/20"
+              className="cursor-pointer text-success border-success/30 bg-success/5 hover:text-success hover:bg-success/20"
               onClick={handlePrintInvoice}
               disabled={printing}
             >
@@ -119,7 +117,7 @@ export function InvoiceHeader({ invoice }: InvoiceHeaderProps) {
               variant="outline"
               size="sm"
             >
-              <Trash className="h-4 w-4" /> <span>Delete</span>
+              <Trash2 className="h-4 w-4" /> <span>Delete</span>
             </Button>
           </div>
         </div>

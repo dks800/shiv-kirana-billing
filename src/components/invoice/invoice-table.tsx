@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/table";
 import { Invoice } from "@/types/invoice.types";
 import { formatDate, formatIndianCurrency } from "@/lib/utils";
-import { Download, Edit, Trash } from "lucide-react";
+import { Download, Edit, Trash2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { handleInvoiceEdit, handleInvoiceView } from "@/lib/invoice.utils";
 import { DeleteProductDialog } from "../products/delete-product-dialog";
@@ -120,11 +120,11 @@ export function InvoiceTable({ invoices }: InvoiceTableProps) {
                   variant="outline"
                   size="sm"
                 >
-                  <Trash className="h-4 w-4" /> <span>Delete</span>
+                  <Trash2 className="h-4 w-4" /> <span>Delete</span>
                 </Button>
                 <Button
                   onClick={(e) => handlePrintInvoice(e, invoice)}
-                  className="flex gap-2 items-center cursor-pointer text-success border-success/30 bg-success/10 hover:text-success hover:bg-success/20"
+                  className="flex gap-2 items-center cursor-pointer text-success border-success/30 bg-success/5 hover:text-success hover:bg-success/20"
                   variant="outline"
                   size="sm"
                   disabled={printing}

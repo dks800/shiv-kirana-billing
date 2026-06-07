@@ -3,11 +3,21 @@
 import { useRouter } from "next/navigation";
 import { useState, type MouseEvent } from "react";
 
-import { Calendar, ReceiptText, Edit, Trash } from "lucide-react";
+import {
+  Calendar,
+  ReceiptText,
+  Edit,
+  Download,
+  Trash2,
+} from "lucide-react";
 import { Invoice } from "@/types/invoice.types";
 import { formatIndianCurrency, formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { handleInvoiceEdit, handleInvoiceView } from "@/lib/invoice.utils";
+import {
+  handleInvoiceEdit,
+  handleInvoiceView,
+  handlePrintInvoice,
+} from "@/lib/invoice.utils";
 import { DeleteProductDialog } from "../products/delete-product-dialog";
 import { deleteInvoice } from "@/services/invoice.service";
 
@@ -18,6 +28,7 @@ interface InvoiceCardProps {
 export function InvoiceCard({ invoice }: InvoiceCardProps) {
   const router = useRouter();
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [printing, setPrinting] = useState(false);
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(
     null,
   );
@@ -99,13 +110,22 @@ export function InvoiceCard({ invoice }: InvoiceCardProps) {
             <span>Edit</span>
           </Button>
           <Button
-            onClick={(e) => handleInvoiceDelete(e, invoice.id!)}
-            className="flex gap-2 items-center text-destructive p-0 hover:text-destructive"
+            onClick={(e) => handlePrintInvoice(e, invoice, setPrinting)}
+            className="flex gap-2 items-center cursor-pointer text-success"
             variant="ghost"
             size="sm"
+            disabled={printing}
           >
-            <Trash className="h-4 w-4" />
-            <span>Delete</span>
+            <Download className="h-4 w-4" />{" "}
+            <span>{printing ? "Printing..." : "Print"}</span>
+          </Button>
+          <Button
+            variant="ghost"
+            className="cursor-pointer rounded-xl hover:bg-destructive/20 hover:text-destructive text-destructive"
+            onClick={(e) => handleInvoiceDelete(e, invoice.id!)}
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            Delete
           </Button>
         </div>
       </div>

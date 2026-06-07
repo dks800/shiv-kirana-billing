@@ -1,6 +1,8 @@
 ﻿import { Invoice } from "@/types/invoice.types";
 import { Timestamp } from "firebase/firestore";
 import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
+import { downloadInvoicePrintPdf } from "./exports/invoice-print-pdf";
+import toast from "react-hot-toast";
 
 export function getFinancialYear(date: Date) {
   const year = date.getFullYear();
@@ -55,4 +57,26 @@ export function normalizeDateInput(value: string, endOfDay = false) {
   }
 
   return date;
+}
+
+export function handlePrintInvoice(
+  e: React.MouseEvent<HTMLButtonElement>,
+  invoice: Invoice,
+  setPrinting: (printing: boolean) => void,
+) {
+  e.stopPropagation();
+  try {
+    setPrinting(true);
+    downloadInvoicePrintPdf(invoice);
+    toast.success("Invoice PDF downloaded");
+  } catch (error) {
+    console.error(error);
+    toast.error(
+      `Failed to print invoice - ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    );
+  } finally {
+    setPrinting(false);
+  }
 }
