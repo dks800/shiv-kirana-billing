@@ -47,7 +47,7 @@ export async function checkBarcodeExists(barcodeNumber: string) {
 export async function createProduct(
   product: Omit<Product, "id" | "createdAt" | "updatedAt">,
 ) {
-  await addRecord(PRODUCTS_COLLECTION, product);
+  return addRecord(PRODUCTS_COLLECTION, product);
 }
 
 /*

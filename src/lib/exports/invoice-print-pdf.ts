@@ -8,21 +8,42 @@ import { getActiveSettings } from "@/lib/settings-runtime";
 const page = {
   width: 210,
   height: 297,
-  marginX: 10,
-  footerY: 286,
-  bottom: 272,
+  marginX: 8,
+  top: 5,
+  bottom: 292,
+  footerY: 295,
 };
 
+const invoiceGap = 2;
+const blockWidth = page.width - page.marginX * 2;
+const invoiceHeaderHeight = 16;
+const invoiceDetailsHeight = 11;
+const amountInWordsHeight = 5;
+const bankDetailsHeight = 11;
+const minimumSummaryHeight = 27;
+
 const tableColumns = [
-  { label: "No", x: 12, width: 9, align: "left" },
-  { label: "Particulars", x: 23, width: 61, align: "left" },
-  { label: "HSNC", x: 86, width: 18, align: "left" },
-  { label: "Qty", x: 106, width: 15, align: "right" },
-  { label: "Rate", x: 123, width: 18, align: "right" },
-  { label: "Taxable", x: 143, width: 21, align: "right" },
-  { label: "GST", x: 166, width: 13, align: "right" },
-  { label: "Amount", x: 181, width: 17, align: "right" },
+  { label: "SN.", x: 0, width: 7, align: "center" },
+  { label: "DESCRIPTION", x: 7, width: 69, align: "left" },
+  { label: "HSN", x: 76, width: 14, align: "center" },
+  { label: "QTY", x: 90, width: 14, align: "right" },
+  { label: "RATE", x: 104, width: 17, align: "right" },
+  { label: "AMOUNT", x: 121, width: 21, align: "right" },
+  { label: "GST%", x: 142, width: 9, align: "center" },
+  { label: "GST AMT.", x: 151, width: 20, align: "right" },
+  { label: "NET AMT.", x: 171, width: 23, align: "right" },
 ] as const;
+
+const tableColumnRight = {
+  sn: 6,
+  hsn: 88.5,
+  qty: 102.5,
+  rate: 119.5,
+  amount: 140.5,
+  gstRate: 149.5,
+  gstAmount: 169.5,
+  netAmount: 192.5,
+} as const;
 
 function money(value: number) {
   return formatIndianCurrency(Number(value) || 0);
@@ -30,21 +51,6 @@ function money(value: number) {
 
 function rightText(doc: jsPDF, value: string, x: number, y: number) {
   doc.text(value, x, y, { align: "right" });
-}
-
-function hasCustomerDetails(invoice: Invoice) {
-  return Boolean(
-    invoice.customerName ||
-    invoice.customerPhone ||
-    invoice.customerGSTIN ||
-    invoice.customerAddress,
-  );
-}
-
-function drawBorder(doc: jsPDF) {
-  doc.setDrawColor(40, 40, 40);
-  doc.setLineWidth(0.2);
-  doc.rect(page.marginX, 10, page.width - page.marginX * 2, 274);
 }
 
 function getBusinessName(settings: AppSettings) {
@@ -61,357 +67,517 @@ function getBusinessDetailLines(settings: AppSettings) {
     .filter(Boolean)
     .join(", ");
   const address = [profile.address, location].filter(Boolean).join(", ");
-  const registrationDetails = [
-    profile.gstin ? `GSTIN: ${profile.gstin}` : "",
+  const contact = [
     profile.phone ? `Phone: ${profile.phone}` : "",
+    profile.email ? `E-Mail: ${profile.email}` : "",
   ]
     .filter(Boolean)
     .join(" | ");
 
   return [
     address,
-    registrationDetails,
+    profile.gstin ? `GSTIN: ${profile.gstin} | ${contact}` : "",
   ].filter(Boolean);
 }
 
-function drawCompanyHeader(doc: jsPDF, invoice: Invoice, settings: AppSettings) {
-  const invoiceDate = invoice.invoiceDate || invoice.createdAt;
-  const customerAvailable = hasCustomerDetails(invoice);
-  const businessName = getBusinessName(settings);
-  const businessDetailLines = getBusinessDetailLines(settings);
-  let y = 31;
-
-  drawBorder(doc);
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(12);
-  doc.text(`TAX INVOICE (${invoice.financialYear})`, page.width / 2, 16, {
-    align: "center",
-  });
-
-  doc.setFontSize(15);
-  doc.text(businessName, page.width / 2, 25, {
-    align: "center",
-  });
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-
-  businessDetailLines.forEach((line) => {
-    const wrappedLines = doc.splitTextToSize(line, 160) as string[];
-    wrappedLines.forEach((wrappedLine) => {
-      doc.text(wrappedLine, page.width / 2, y, { align: "center" });
-      y += 4;
-    });
-  });
-
-  if (!businessDetailLines.length) {
-    doc.text("GST Billing & Invoice Management", page.width / 2, y, {
-      align: "center",
-    });
-    y += 4;
-  }
-
-  const invoiceMetaTop = Math.max(36, y + 2);
-  const invoiceMetaTextY = invoiceMetaTop + 7;
-  const invoiceMetaBottom = invoiceMetaTop + 13;
-
-  doc.line(page.marginX, invoiceMetaTop, page.width - page.marginX, invoiceMetaTop);
-
-  doc.setFont("helvetica", "bold");
-  doc.text("Invoice No.", 13, invoiceMetaTextY);
-  doc.text("Date", 112, invoiceMetaTextY);
-  doc.text("Financial Year", 158, invoiceMetaTextY);
-
-  doc.setFont("helvetica", "normal");
-  doc.text(String(invoice.invoiceNumber || "-"), 39, invoiceMetaTextY);
-  doc.text(formatDate(invoiceDate), 126, invoiceMetaTextY);
-  doc.text(invoice.financialYear || "-", 183, invoiceMetaTextY);
-
-  doc.line(page.marginX, invoiceMetaBottom, page.width - page.marginX, invoiceMetaBottom);
-
-  if (customerAvailable) {
-    const customerStartY = invoiceMetaBottom + 7;
-    let customerY = customerStartY;
-
-    doc.setFont("helvetica", "bold");
-    doc.text("Buyer", 13, customerStartY);
-
-    doc.setFont("helvetica", "normal");
-    const customerLines = [
-      invoice.customerName,
-      invoice.customerPhone ? `Phone: ${invoice.customerPhone}` : "",
-      invoice.customerGSTIN ? `GSTIN: ${invoice.customerGSTIN}` : "",
-      invoice.customerAddress,
-    ].filter(Boolean) as string[];
-
-    customerLines.forEach((line) => {
-      const wrappedLines = doc.splitTextToSize(line, 130) as string[];
-      wrappedLines.forEach((wrappedLine) => {
-        doc.text(wrappedLine, 31, customerY);
-        customerY += 5;
-      });
-    });
-
-    const customerBlockBottom = Math.max(customerY + 4, customerStartY + 19);
-    doc.line(
-      page.marginX,
-      customerBlockBottom,
-      page.width - page.marginX,
-      customerBlockBottom,
-    );
-
-    return customerBlockBottom;
-  }
-
-  return invoiceMetaBottom + 7;
-}
-
-function drawTableHeader(doc: jsPDF, y: number) {
-  doc.setDrawColor(40, 40, 40);
-
-  doc.rect(page.marginX, y, page.width - page.marginX * 2, 8);
-
-  doc.line(page.marginX, y, page.width - page.marginX, y);
-  doc.line(page.marginX, y + 8, page.width - page.marginX, y + 8);
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(7.5);
-  doc.setTextColor(0, 0, 0);
-
-  tableColumns.forEach((column) => {
-    if (column.align === "right") {
-      rightText(doc, column.label, column.x + column.width, y + 5.5);
-      return;
-    }
-
-    doc.text(column.label, column.x, y + 5.5);
-  });
-}
-
 function drawFooter(doc: jsPDF, pageNumber: number, pageCount: number) {
-  doc.setFontSize(8);
+  doc.setFontSize(7);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(100, 100, 100);
-  doc.text(
+  rightText(
+    doc,
     `Page ${pageNumber} of ${pageCount}`,
-    page.width - 12,
-    page.footerY+5,
-    {
-      align: "right",
-    },
+    page.width - 8,
+    page.footerY,
   );
-
-  const parts = [
-    { text: "Made with love by ", color: [100, 100, 100], font: "normal" },
-    { text: "Murly", color: [234, 88, 12], font: "bolditalic" },
-  ] as const;
-
-  doc.setFontSize(8);
-  const totalWidth = parts.reduce((width, part) => {
-    doc.setFont("helvetica", part.font);
-    return width + doc.getTextWidth(part.text);
-  }, 0);
-
-  let x = page.width / 2 - totalWidth / 2;
-  parts.forEach((part) => {
-    doc.setFont("helvetica", part.font);
-    doc.setTextColor(part.color[0], part.color[1], part.color[2]);
-    doc.text(part.text, x, page.footerY+5);
-    x += doc.getTextWidth(part.text);
-  });
-
   doc.setTextColor(0, 0, 0);
-  doc.setFont("helvetica", "normal");
-}
-
-function drawPageScaffold(doc: jsPDF, invoice: Invoice, settings: AppSettings) {
-  const headerBottom = drawCompanyHeader(doc, invoice, settings);
-  const tableHeaderY = headerBottom + 4;
-  drawTableHeader(doc, tableHeaderY);
-  return tableHeaderY + 12;
 }
 
 function getItemRowHeight(doc: jsPDF, item: InvoiceItem) {
-  const nameLines = doc.splitTextToSize(item.name || "-", 60) as string[];
-  return Math.max(8, nameLines.length * 4.5 + 3);
+  const nameLines = doc.splitTextToSize(item.name || "-", 66) as string[];
+  return Math.max(5.2, nameLines.length * 3.4 + 2);
+}
+
+function getBankLine(settings: AppSettings) {
+  const bank = settings.bankAccount;
+  return [
+    bank.bankName ? `${bank.bankName?.toUpperCase()} (${bank.branch})` : "",
+    bank.accountNumber ? `A/c No. - ${bank.accountNumber}` : "",
+    bank.ifscCode ? `IFSC - ${bank.ifscCode}` : "",
+  ].filter(Boolean);
+}
+
+function getGstSummaryHeight(invoice: Invoice, settings: AppSettings) {
+  if (!settings.pdf.showGSTSummary) {
+    return minimumSummaryHeight;
+  }
+
+  return 11 + Math.max(invoice.gstSummary?.length || 0, 1) * 5;
+}
+
+function getInvoiceBlockHeight(
+  doc: jsPDF,
+  invoice: Invoice,
+  settings: AppSettings,
+) {
+  const rowsHeight = invoice.items.reduce(
+    (height, item) => height + getItemRowHeight(doc, item),
+    0,
+  );
+  const wordsHeight = settings.pdf.showAmountInWords ? amountInWordsHeight : 0;
+
+  return (
+    invoiceHeaderHeight +
+    invoiceDetailsHeight +
+    7 +
+    rowsHeight +
+    6 +
+    Math.max(getGstSummaryHeight(invoice, settings), minimumSummaryHeight) +
+    wordsHeight +
+    bankDetailsHeight
+  );
+}
+
+function drawSingleLineCellText(
+  doc: jsPDF,
+  label: string,
+  value: string,
+  x: number,
+  y: number,
+  maxWidth: number,
+) {
+  doc.setFont("helvetica", "bold");
+  doc.text(label, x, y);
+  doc.setFont("helvetica", "normal");
+  const lines = doc.splitTextToSize(value || "-", maxWidth) as string[];
+  doc.text(lines.slice(0, 1), x + 17, y);
+}
+
+function drawInvoiceNumberCell(
+  doc: jsPDF,
+  value: string,
+  x: number,
+  y: number,
+) {
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7.4);
+  doc.text("Invoice No.:", x, y);
+  doc.setFontSize(12);
+  doc.text(value || "-", x + 20, y + 0.8);
+  doc.setFontSize(7.4);
+}
+
+function drawInvoiceHeader(
+  doc: jsPDF,
+  invoice: Invoice,
+  settings: AppSettings,
+  x: number,
+  y: number,
+  continued = false,
+) {
+  const businessName = getBusinessName(settings);
+  const detailLines = getBusinessDetailLines(settings);
+  const invoiceDate = invoice.invoiceDate || invoice.createdAt;
+  const headerRightX = x + blockWidth - 8;
+
+  doc.setDrawColor(25, 25, 25);
+  doc.setLineWidth(0.25);
+  doc.rect(x, y, blockWidth, invoiceHeaderHeight);
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(13);
+  doc.text(businessName, x + blockWidth / 2, y + 5.5, { align: "center" });
+
+  doc.setFontSize(7.2);
+  detailLines.slice(0, 4).forEach((line, index) => {
+    doc.setFont("helvetica", index === 3 ? "bold" : "normal");
+    doc.text(line, x + blockWidth / 2, y + 9.5 + index * 3, {
+      align: "center",
+    });
+  });
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  rightText(doc, "GST INVOICE", headerRightX, y + 4.8);
+  doc.setFont("helvetica", "normal");
+  rightText(
+    doc,
+    continued ? "Continued" : "Original for Buyer",
+    headerRightX,
+    y + 8.6,
+  );
+
+  const detailsTop = y + invoiceHeaderHeight;
+  const customerColWidth = 128;
+  const dividerX = x + customerColWidth;
+
+  doc.rect(x, detailsTop, blockWidth, invoiceDetailsHeight);
+  doc.line(dividerX, detailsTop, dividerX, detailsTop + invoiceDetailsHeight);
+
+  doc.setFontSize(7.4);
+  const customerGstPhone =
+    [
+      invoice.customerGSTIN ? `GSTIN: ${invoice.customerGSTIN}` : "",
+      invoice.customerPhone ? `Ph: ${invoice.customerPhone}` : "",
+    ]
+      .filter(Boolean)
+      .join(" | ") || "-";
+
+  drawSingleLineCellText(
+    doc,
+    "To,",
+    `${invoice.customerName || "-"}   ${customerGstPhone}`,
+    x + 2,
+    detailsTop + 4.2,
+    104,
+  );
+  drawSingleLineCellText(
+    doc,
+    "Address:",
+    invoice.customerAddress || "-",
+    x + 2,
+    detailsTop + 8.5,
+    104,
+  );
+
+  const invoiceX = x + customerColWidth + 2;
+  drawInvoiceNumberCell(
+    doc,
+    String(invoice.invoiceNumber || "-"),
+    invoiceX,
+    detailsTop + 4.2,
+  );
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7.4);
+  doc.text("Date:", invoiceX + 34, detailsTop + 4.2);
+  doc.setFont("helvetica", "normal");
+  doc.text(formatDate(invoiceDate), invoiceX + 46, detailsTop + 4.2);
+
+  drawSingleLineCellText(
+    doc,
+    "Payment:",
+    invoice.paymentMode || "-",
+    invoiceX,
+    detailsTop + 8.5,
+    26,
+  );
+
+  return detailsTop + invoiceDetailsHeight;
+}
+
+function drawTableHeader(doc: jsPDF, x: number, y: number) {
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7.2);
+  doc.rect(x, y, blockWidth, 7);
+
+  tableColumns.forEach((column, index) => {
+    if (index > 0) {
+      doc.line(x + column.x, y, x + column.x, y + 7);
+    }
+
+    if (column.align === "right") {
+      rightText(doc, column.label, x + column.x + column.width - 1.2, y + 4.8);
+      return;
+    }
+
+    if (column.align === "center") {
+      doc.text(column.label, x + column.x + column.width / 2, y + 4.8, {
+        align: "center",
+      });
+      return;
+    }
+
+    doc.text(column.label, x + column.x + 1.2, y + 4.8);
+  });
+
+  return y + 7;
 }
 
 function drawItemRow(
   doc: jsPDF,
   item: InvoiceItem,
   index: number,
+  x: number,
   y: number,
   height: number,
 ) {
-  const nameLines = doc.splitTextToSize(item.name || "-", 60) as string[];
+  const nameLines = doc.splitTextToSize(item.name || "-", 66) as string[];
+  const hsnCode = String(item.hsnCode || "-").slice(0, 8);
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(7.5);
-  doc.line(page.marginX, y + height, page.width - page.marginX, y + height);
+  doc.setFontSize(7);
+  doc.rect(x, y, blockWidth, height);
 
-  doc.text(String(index + 1), 12, y + 5);
-  doc.text(nameLines, 23, y + 5);
-  doc.text(item.hsnCode || "-", 86, y + 5);
-  rightText(doc, `${item.quantity} ${item.unit || ""}`.trim(), 121, y + 5);
-  rightText(doc, money(item.rate), 141, y + 5);
-  rightText(doc, money(item.taxableAmount), 164, y + 5);
-  rightText(doc, `${item.gstRate}%`, 179, y + 5);
-  rightText(doc, money(item.totalAmount), 198, y + 5);
-}
+  tableColumns.forEach((column, columnIndex) => {
+    if (columnIndex > 0) {
+      doc.line(x + column.x, y, x + column.x, y + height);
+    }
+  });
 
-function drawQuantityTotalRow(doc: jsPDF, invoice: Invoice, startY: number) {
-  const totalQuantity = invoice.items.reduce(
-    (total, item) => total + (Number(item.quantity) || 0),
-    0,
+  rightText(doc, String(index + 1), x + tableColumnRight.sn, y + 3.8);
+  doc.text(nameLines, x + 8.5, y + 3.8);
+  doc.text(hsnCode, x + tableColumnRight.hsn, y + 3.8, {
+    align: "right",
+  });
+  rightText(
+    doc,
+    `${item.quantity} ${item.unit || ""}`.trim(),
+    x + tableColumnRight.qty,
+    y + 3.8,
   );
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  doc.line(page.marginX, startY, page.width - page.marginX, startY);
-  rightText(doc, `${totalQuantity} items`, 121, startY + 6);
-  doc.setFont("helvetica", "bold");
-  rightText(doc, money(invoice.subtotal), 198, startY + 6);
-  doc.setFont("helvetica", "normal");
-  return startY + 8;
+  rightText(doc, money(item.rate), x + tableColumnRight.rate, y + 3.8);
+  rightText(doc, money(item.taxableAmount), x + tableColumnRight.amount, y + 3.8);
+  rightText(doc, `${item.gstRate}%`, x + tableColumnRight.gstRate, y + 3.8);
+  rightText(doc, money(item.gstAmount), x + tableColumnRight.gstAmount, y + 3.8);
+  rightText(doc, money(item.totalAmount), x + tableColumnRight.netAmount, y + 3.8);
 }
 
-function drawGstSummaryTable(
+function drawQuantityTotalRow(
   doc: jsPDF,
   invoice: Invoice,
   x: number,
   y: number,
 ) {
-  const width = 123;
-  const gstSummary = invoice.gstSummary || [];
-  const rowCount = Math.max(gstSummary.length, 1);
-  const height = 21 + rowCount * 6;
-  let rowY = y + 14;
+  const totalQuantity = invoice.items.reduce(
+    (total, item) => total + (Number(item.quantity) || 0),
+    0,
+  );
 
-  doc.setDrawColor(40, 40, 40);
-  doc.rect(x, y, width, height);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
-  doc.text("GST Summary", x + 3, y + 6);
-  doc.line(x, y + 9, x + width, y + 9);
+  doc.setFontSize(7.5);
+  doc.rect(x, y, blockWidth, 6);
+  doc.text("TOTAL :", x + 5, y + 4.2);
+  rightText(doc, String(totalQuantity), x + tableColumnRight.qty, y + 4.2);
+  rightText(doc, money(invoice.subtotal), x + tableColumnRight.amount, y + 4.2);
+  rightText(doc, money(invoice.totalGST), x + tableColumnRight.gstAmount, y + 4.2);
+  rightText(doc, money(invoice.grandTotal), x + tableColumnRight.netAmount, y + 4.2);
 
-  doc.setFontSize(7.2);
-  doc.text("Class", x + 3, rowY);
-  rightText(doc, "Taxable", x + 48, rowY);
-  rightText(doc, "CGST", x + 72, rowY);
-  rightText(doc, "SGST", x + 96, rowY);
-  rightText(doc, "Total GST", x + width - 3, rowY);
-  doc.line(x, rowY + 2, x + width, rowY + 2);
-  rowY += 8;
-
-  doc.setFont("helvetica", "normal");
-  if (gstSummary.length) {
-    gstSummary.forEach((summary) => {
-      doc.text(`${summary.gstRate}%`, x + 3, rowY);
-      rightText(doc, money(summary.taxableAmount), x + 48, rowY);
-      rightText(doc, money(summary.cgstAmount), x + 72, rowY);
-      rightText(doc, money(summary.sgstAmount), x + 96, rowY);
-      rightText(doc, money(summary.gstAmount), x + width - 3, rowY);
-      rowY += 6;
-    });
-  } else {
-    doc.text("No GST summary available", x + 3, rowY);
-    rowY += 6;
-  }
-
-  return y + height;
+  return y + 6;
 }
 
-function drawTotalsPanel(doc: jsPDF, invoice: Invoice, x: number, y: number) {
-  const width = 67;
-  const totals = [
-    ["Sub Total", money(invoice.subtotal)],
-    ["CGST", money(invoice.totalCGST)],
-    ["SGST", money(invoice.totalSGST)],
-    ["Round Up", money(invoice.roundUp || 0)],
-  ];
-  let rowY = y + 15;
+function drawGstSummary(
+  doc: jsPDF,
+  invoice: Invoice,
+  x: number,
+  y: number,
+  height: number,
+) {
+  const summary = invoice.gstSummary || [];
+  const rows = summary.length ? summary : [];
+  const width = 120;
+  let rowY = y + 10;
 
-  doc.setDrawColor(40, 40, 40);
-  doc.rect(x, y, width, 48);
+  doc.rect(x, y, width, height);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
-  doc.text("Totals", x + 3, y + 6);
-  doc.line(x, y + 9, x + width, y + 9);
+  doc.setFontSize(7.3);
+  doc.text("CLASS", x + 3, y + 5);
+  rightText(doc, "SGST", x + 42, y + 5);
+  rightText(doc, "CGST", x + 68, y + 5);
+  rightText(doc, "TOTAL GST", x + 94, y + 5);
+  rightText(doc, "SALE AMT.", x + width - 4, y + 5);
+  doc.line(x, y + 7, x + width, y + 7);
 
-  totals.forEach(([label, value]) => {
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7);
+
+  if (!rows.length) {
+    doc.text("No GST summary available", x + 3, rowY);
+    return;
+  }
+
+  rows.forEach((row) => {
+    doc.text(`${row.gstRate}%`, x + 3, rowY);
+    rightText(doc, money(row.sgstAmount), x + 42, rowY);
+    rightText(doc, money(row.cgstAmount), x + 68, rowY);
+    rightText(doc, money(row.gstAmount), x + 94, rowY);
+    rightText(doc, money(row.taxableAmount), x + width - 4, rowY);
+    rowY += 5;
+  });
+}
+
+function drawTotalsPanel(
+  doc: jsPDF,
+  invoice: Invoice,
+  x: number,
+  y: number,
+  height: number,
+) {
+  const width = blockWidth - 120;
+  const rows = [
+    ["Sub Total", money(invoice.subtotal)],
+    ["SGST Amount", money(invoice.totalSGST)],
+    ["CGST Amount", money(invoice.totalCGST)],
+    ["Round Off (+/-)", money(invoice.roundUp || 0)],
+  ];
+  let rowY = y + 3.5;
+
+  doc.rect(x, y, width, height);
+  doc.setFontSize(7);
+
+  rows.forEach(([label, value]) => {
     doc.setFont("helvetica", "normal");
     doc.text(label, x + 3, rowY);
     rightText(doc, value, x + width - 3, rowY);
-    rowY += 7;
+    rowY += 4.6;
   });
 
-  doc.line(x, rowY - 2, x + width, rowY - 2);
+  const grandTotalTop = y + height - 8;
+  const grandTotalTextY = grandTotalTop + 5.2;
+
+  doc.line(x, grandTotalTop, x + width, grandTotalTop);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.text("GRAND TOTAL", x + 3, grandTotalTextY);
+  rightText(doc, money(invoice.grandTotal), x + width - 3, grandTotalTextY);
+}
+
+function drawBankDetails(
+  doc: jsPDF,
+  settings: AppSettings,
+  x: number,
+  y: number,
+) {
+  const bankLine = getBankLine(settings);
+  const signatureX = x + 120;
+  const signatureWidth = blockWidth - 120;
+  const businessName = getBusinessName(settings);
+
+  doc.rect(x, y, blockWidth, bankDetailsHeight);
+  doc.line(signatureX, y, signatureX, y + bankDetailsHeight);
+
+  doc.setFont("helvetica", "bolditalic");
+  doc.setFontSize(8);
+  doc.text("BANK DETAILS", x + 2, y + 4.2);
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(12);
-
-  doc.text("Grand Total", x + 3, rowY + 3);
-  rightText(doc, money(invoice.grandTotal), x + width - 3, rowY + 3);
+  doc.setFontSize(7.2);
+  const lines = doc.splitTextToSize(bankLine.join("   "), 116) as string[];
+  doc.text(lines.slice(0, 2), x + 2, y + 8);
 
   doc.setFontSize(8);
+  const signatureNameLines = doc.splitTextToSize(
+    `For, ${businessName}`,
+    signatureWidth - 4,
+  ) as string[];
+  doc.text(signatureNameLines.slice(0, 1), signatureX + signatureWidth / 2, y + 3.8, {
+    align: "center",
+  });
+  doc.text("Authorised Signatory", signatureX + signatureWidth / 2, y + 9.5, {
+    align: "center",
+  });
 
-  return y + 48;
+  return y + bankDetailsHeight;
 }
 
-function drawTotals(
+function drawInvoiceSummary(
   doc: jsPDF,
   invoice: Invoice,
-  startY: number,
   settings: AppSettings,
+  x: number,
+  y: number,
 ) {
-  let y = startY;
-  const gstRows = Math.max(invoice.gstSummary?.length || 0, 1);
-  const summaryHeight = settings.pdf.showGSTSummary
-    ? Math.max(56, 21 + gstRows * 6)
-    : 56;
+  const panelHeight = Math.max(
+    getGstSummaryHeight(invoice, settings),
+    minimumSummaryHeight,
+  );
 
-  if (y + summaryHeight > 222) {
-    doc.addPage();
-    y = drawPageScaffold(doc, invoice, settings);
+  if (settings.pdf.showGSTSummary) {
+    drawGstSummary(doc, invoice, x, y, panelHeight);
+  } else {
+    doc.rect(x, y, 120, panelHeight);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7.3);
+    doc.text("GST Summary hidden", x + 3, y + 6);
   }
 
-  // doc.line(page.marginX, y, page.width - page.marginX, y);
-  // y += 4;
+  drawTotalsPanel(doc, invoice, x + 120, y, panelHeight);
 
-  const gstBottom = settings.pdf.showGSTSummary
-    ? drawGstSummaryTable(doc, invoice, 10, y)
-    : y;
-  const totalsBottom = drawTotalsPanel(doc, invoice, 133, y);
-  y = Math.max(gstBottom, totalsBottom) + 5;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(6.8);
+  let nextY = y + panelHeight;
 
   if (settings.pdf.showAmountInWords) {
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
     const amountWords = doc.splitTextToSize(
       `In words: ${amountToWords(invoice.grandTotal)}`,
-      185,
+      blockWidth - 4,
     ) as string[];
-    doc.text(amountWords, 13, y);
-    y += amountWords.length * 4.5 + 4;
+
+    doc.rect(x, nextY, blockWidth, amountInWordsHeight);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7);
+    doc.text(amountWords.slice(0, 1), x + 2, nextY + 3.5);
+    nextY += amountInWordsHeight;
   }
 
-  doc.line(page.marginX, y, page.width - page.marginX, y);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(7.5);
-  doc.text(
-    "Declaration: We declare that this invoice shows the actual price of the goods described.",
-    13,
-    y + 7,
-  );
-  doc.setFont("helvetica", "bold");
-  doc.text("For, SHIV KIRANA & PROVISION STORES", 198, y + 10, { align: "right" });
-  doc.text("Authorised Signatory", 198, y + 38, { align: "right" });
+  return nextY;
 }
 
-export function downloadInvoicePrintPdf(invoice: Invoice) {
-  const settings = getActiveSettings();
-  const businessName = getBusinessName(settings);
+function drawCompactInvoiceBlock(
+  doc: jsPDF,
+  invoice: Invoice,
+  settings: AppSettings,
+  startY: number,
+  options: { addPages: boolean; continued?: boolean },
+) {
+  const x = page.marginX;
+  let y = startY;
+  let itemStartIndex = 0;
+
+  while (itemStartIndex < invoice.items.length) {
+    y = drawInvoiceHeader(
+      doc,
+      invoice,
+      settings,
+      x,
+      y,
+      options.continued || itemStartIndex > 0,
+    );
+    y = drawTableHeader(doc, x, y);
+
+    for (; itemStartIndex < invoice.items.length; itemStartIndex += 1) {
+      const item = invoice.items[itemStartIndex];
+      const rowHeight = getItemRowHeight(doc, item);
+      const reserveForSummary =
+        6 +
+        Math.max(getGstSummaryHeight(invoice, settings), minimumSummaryHeight) +
+        bankDetailsHeight;
+
+      if (
+        options.addPages &&
+        itemStartIndex > 0 &&
+        y + rowHeight + reserveForSummary > page.bottom
+      ) {
+        doc.addPage();
+        y = page.top;
+        break;
+      }
+
+      drawItemRow(doc, item, itemStartIndex, x, y, rowHeight);
+      y += rowHeight;
+    }
+  }
+
+  y = drawQuantityTotalRow(doc, invoice, x, y);
+
+  const summaryHeight =
+    Math.max(getGstSummaryHeight(invoice, settings), minimumSummaryHeight) +
+    (settings.pdf.showAmountInWords ? amountInWordsHeight : 0) +
+    bankDetailsHeight;
+
+  if (options.addPages && y + summaryHeight > page.bottom) {
+    doc.addPage();
+    y = drawInvoiceHeader(doc, invoice, settings, x, page.top, true);
+    y = drawTableHeader(doc, x, y);
+    y = drawQuantityTotalRow(doc, invoice, x, y);
+  }
+
+  y = drawInvoiceSummary(doc, invoice, settings, x, y);
+  y = drawBankDetails(doc, settings, x, y);
+
+  return y;
+}
+
+function createInvoicePdf(settings: AppSettings) {
   const doc = new jsPDF({
     orientation: "portrait",
     unit: "mm",
@@ -420,38 +586,62 @@ export function downloadInvoicePrintPdf(invoice: Invoice) {
   });
 
   doc.setProperties({
-    title: `Invoice ${invoice.invoiceNumber}`,
     subject: "Tax Invoice",
-    creator: businessName,
+    creator: getBusinessName(settings),
   });
 
-  let y = drawPageScaffold(doc, invoice, settings);
+  doc.setDrawColor(25, 25, 25);
+  doc.setTextColor(0, 0, 0);
 
-  invoice.items.forEach((item, index) => {
-    const rowHeight = getItemRowHeight(doc, item);
+  return doc;
+}
 
-    if (y + rowHeight > page.bottom) {
-      doc.addPage();
-      y = drawPageScaffold(doc, invoice, settings);
-    }
-
-    drawItemRow(doc, item, index, y, rowHeight);
-    y += rowHeight;
-  });
-
-  if (y + 11 > page.bottom) {
-    doc.addPage();
-    y = drawPageScaffold(doc, invoice, settings);
-  }
-
-  y = drawQuantityTotalRow(doc, invoice, y);
-  drawTotals(doc, invoice, y + 2, settings);
-
+function addPageFooters(doc: jsPDF) {
   const pageCount = doc.getNumberOfPages();
   for (let pageNumber = 1; pageNumber <= pageCount; pageNumber += 1) {
     doc.setPage(pageNumber);
     drawFooter(doc, pageNumber, pageCount);
   }
+}
 
+export function downloadInvoicePrintPdf(invoice: Invoice) {
+  const settings = getActiveSettings();
+  const doc = createInvoicePdf(settings);
+
+  doc.setProperties({
+    title: `Invoice ${invoice.invoiceNumber}`,
+  });
+
+  drawCompactInvoiceBlock(doc, invoice, settings, page.top, { addPages: true });
+  addPageFooters(doc);
   doc.save(`invoice-${invoice.invoiceNumber || "print"}.pdf`);
+}
+
+export function downloadSelectedInvoicesPrintPdf(invoices: Invoice[]) {
+  if (!invoices.length) {
+    return;
+  }
+
+  const settings = getActiveSettings();
+  const doc = createInvoicePdf(settings);
+  let y = page.top;
+
+  doc.setProperties({
+    title: `Selected Invoices (${invoices.length})`,
+  });
+
+  invoices.forEach((invoice, index) => {
+    const invoiceHeight = getInvoiceBlockHeight(doc, invoice, settings);
+
+    if (index > 0 && y + invoiceHeight > page.bottom) {
+      doc.addPage();
+      y = page.top;
+    }
+
+    y = drawCompactInvoiceBlock(doc, invoice, settings, y, { addPages: true });
+    y += invoiceGap;
+  });
+
+  addPageFooters(doc);
+  doc.save(`selected-invoices-${new Date().toISOString().slice(0, 10)}.pdf`);
 }

@@ -23,6 +23,13 @@ export interface AppSettings {
     showAmountInWords: boolean;
   };
 
+  bankAccount: {
+    bankName: string;
+    accountNumber: string;
+    ifscCode: string;
+    branch: string;
+  };
+
   preferences: {
     theme: "light" | "dark";
     dateFormat: DateFormat;
@@ -30,3 +37,8 @@ export interface AppSettings {
 
   updatedAt?: unknown;
 }
+
+export type MutableAppSettings = Pick<
+  AppSettings,
+  "bankAccount" | "pdf" | "preferences"
+>;

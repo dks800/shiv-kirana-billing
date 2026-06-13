@@ -21,9 +21,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Loader, MiniLoader } from "@/components/ui/loader";
 import { Product } from "@/types/product.types";
-import { Invoice, InvoiceItem } from "@/types/invoice.types";
+import { Invoice, InvoiceItem, PaymentMode } from "@/types/invoice.types";
 import { getProducts } from "@/services/product.service";
 import {
   createInvoice,
@@ -48,6 +55,7 @@ interface InvoiceFormProps {
 interface InvoiceDraft {
   invoiceDate: string;
   invoiceNumber: string;
+  paymentMode: PaymentMode;
   customerDetails: CustomerDetails;
   items: InvoiceItem[];
 }
@@ -101,6 +109,7 @@ function buildDraft(invoice?: Invoice): InvoiceDraft {
       ? toInputDate(invoice.invoiceDate)
       : getTodayInputDate(),
     invoiceNumber: invoice?.invoiceNumber ? String(invoice.invoiceNumber) : "",
+    paymentMode: invoice?.paymentMode || "Cash",
     customerDetails: {
       customerName: invoice?.customerName || "",
       customerGSTIN: invoice?.customerGSTIN || "",
@@ -160,6 +169,9 @@ export function InvoiceForm({
   const [invoiceNumberError, setInvoiceNumberError] = useState<string | null>(
     null,
   );
+  const [paymentMode, setPaymentMode] = useState<PaymentMode>(
+    initialDraft.paymentMode,
+  );
   const [isLoadingInvoiceNumber, setIsLoadingInvoiceNumber] = useState(false);
   const [customerDetails, setCustomerDetails] = useState<CustomerDetails>(
     initialDraft.customerDetails,
@@ -172,10 +184,11 @@ export function InvoiceForm({
     () => ({
       invoiceDate,
       invoiceNumber,
+      paymentMode,
       customerDetails,
       items,
     }),
-    [customerDetails, invoiceDate, invoiceNumber, items],
+    [customerDetails, invoiceDate, invoiceNumber, items, paymentMode],
   );
 
   const isDirty = useMemo(() => {
@@ -183,6 +196,7 @@ export function InvoiceForm({
       return Boolean(
         items.length ||
         invoiceNumber.trim() ||
+        paymentMode !== "Cash" ||
         customerDetails.customerName ||
         customerDetails.customerGSTIN ||
         customerDetails.customerAddress ||
@@ -202,6 +216,7 @@ export function InvoiceForm({
     invoiceNumber,
     items.length,
     mode,
+    paymentMode,
   ]);
 
   const totals = useMemo(() => {
@@ -212,6 +227,7 @@ export function InvoiceForm({
     (draft: InvoiceDraft, trackInitial = false) => {
       setInvoiceDate(draft.invoiceDate);
       setInvoiceNumber(draft.invoiceNumber);
+      setPaymentMode(draft.paymentMode);
       setCustomerDetails(draft.customerDetails);
       setItems(draft.items);
 
@@ -468,6 +484,7 @@ export function InvoiceForm({
     return {
       invoiceNumber: Number(invoiceNumber.trim()),
       invoiceDate: billDate,
+      paymentMode,
       ...customerDetails,
       items,
       financialYear: getFinancialYear(billDate),
@@ -535,6 +552,11 @@ export function InvoiceForm({
       const billDate = new Date(invoiceDate);
       if (Number.isNaN(billDate.getTime())) {
         toast.error("Invoice date is invalid.");
+        return;
+      }
+
+      if (!paymentMode) {
+        toast.error("Payment mode is required.");
         return;
       }
 
@@ -689,12 +711,10 @@ export function InvoiceForm({
         </Dialog>
 
         <div className="space-y-3">
-          {(mode === "create" || customerDetails?.customerName) && (
-            <CustomerDetailsForm
-              value={customerDetails}
-              onChange={setCustomerDetails}
-            />
-          )}
+          <CustomerDetailsForm
+            value={customerDetails}
+            onChange={setCustomerDetails}
+          />
           <div className="grid gap-3 md:grid-cols-2">
             <label className="space-y-1 text-sm">
               <span>Invoice date</span>
@@ -731,6 +751,22 @@ export function InvoiceForm({
               {invoiceNumberError ? (
                 <p className="text-xs text-destructive">{invoiceNumberError}</p>
               ) : null}
+            </label>
+
+            <label className="space-y-1 text-sm md:col-span-2">
+              <span>Payment Mode</span>
+              <Select
+                value={paymentMode}
+                onValueChange={(value) => setPaymentMode(value as PaymentMode)}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select payment mode" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Cash">Cash</SelectItem>
+                  <SelectItem value="UPI">UPI</SelectItem>
+                </SelectContent>
+              </Select>
             </label>
           </div>
 

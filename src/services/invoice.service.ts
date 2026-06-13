@@ -30,6 +30,9 @@ function mapInvoiceDocs(
       invoiceDate: data.invoiceDate,
       customerGSTIN: data.customerGSTIN || "",
       customerName: data.customerName || "",
+      customerAddress: data.customerAddress || "",
+      customerPhone: data.customerPhone || "",
+      paymentMode: data.paymentMode,
       totalItems: data.totalItems || 0,
       items: data.items || [],
       subtotal: data.subtotal || 0,
@@ -38,6 +41,7 @@ function mapInvoiceDocs(
       totalGST: data.totalGST || 0,
       roundUp: data.roundUp || 0,
       grandTotal: data.grandTotal || 0,
+      gstSummary: data.gstSummary || [],
     };
   });
 }

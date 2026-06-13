@@ -23,6 +23,13 @@ export const fallbackSettings: AppSettings = {
     showAmountInWords: true,
   },
 
+  bankAccount: {
+    bankName: "",
+    accountNumber: "",
+    ifscCode: "",
+    branch: "",
+  },
+
   preferences: {
     theme: "light",
     dateFormat: "DD/MM/YYYY",
@@ -46,6 +53,10 @@ export function mergeSettings(settings?: Partial<AppSettings> | null): AppSettin
     pdf: {
       ...fallbackSettings.pdf,
       ...settings?.pdf,
+    },
+    bankAccount: {
+      ...fallbackSettings.bankAccount,
+      ...settings?.bankAccount,
     },
     preferences: {
       ...fallbackSettings.preferences,

@@ -7,11 +7,13 @@ import {
   DialogFooter,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { PaymentMode } from "@/types/invoice.types";
 
 interface FilterState {
   financialYear: string;
   fromDate: string;
   toDate: string;
+  paymentMode: "" | PaymentMode;
 }
 
 interface FilterModalProps {
@@ -56,6 +58,24 @@ export const FilterModal = ({
                   {financialYear}
                 </option>
               ))}
+            </select>
+          </label>
+
+          <label className="space-y-1 text-sm">
+            <span>Payment Mode</span>
+            <select
+              value={draftFilters.paymentMode}
+              onChange={(event) =>
+                setDraftFilters((prev) => ({
+                  ...prev,
+                  paymentMode: event.target.value as "" | PaymentMode,
+                }))
+              }
+              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            >
+              <option value="">All</option>
+              <option value="Cash">Cash</option>
+              <option value="UPI">UPI</option>
             </select>
           </label>
 

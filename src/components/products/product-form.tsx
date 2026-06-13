@@ -25,39 +25,39 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import toast from "react-hot-toast";
 import { Input } from "@/components/ui/input";
 import { checkBarcodeExists } from "@/services/product.service";
-import { BarcodeScannerDialog } from "../scanner/barcode-scanner-dialog";
-import { ScanBarcode } from "lucide-react";
+
+const emptyProductFormValues: ProductFormValues = {
+  name: "",
+  barcodeNumber: "",
+  hsnCode: "",
+  salePrice: 0,
+  purchasePrice: 0,
+  gstRate: 18,
+  unit: "",
+};
 
 interface ProductFormProps {
   initialData?: Product;
+  initialValues?: ProductFormValues;
   onSubmit: (values: ProductFormValues) => Promise<void>;
   isLoading?: boolean;
 }
 
 export function ProductForm({
   initialData,
+  initialValues,
   onSubmit,
   isLoading,
 }: ProductFormProps) {
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
     mode: "onChange",
-    defaultValues: {
-      name: "",
-      barcodeNumber: "",
-      hsnCode: "",
-      salePrice: 0,
-      purchasePrice: 0,
-      gstRate: 18,
-      unit: "",
-    },
+    defaultValues: initialValues ?? emptyProductFormValues,
   });
 
   const [checkingBarcode, setCheckingBarcode] = useState(false);
-  // const [scannerOpen, setScannerOpen] = useState(false);
 
   useEffect(() => {
     const subscription = form.watch(async (values, { name }) => {
@@ -107,8 +107,10 @@ export function ProductForm({
         gstRate: initialData.gstRate,
         unit: initialData.unit || "",
       });
+    } else {
+      form.reset(initialValues ?? emptyProductFormValues);
     }
-  }, [initialData, form]);
+  }, [initialData, initialValues, form]);
 
   return (
     <>
@@ -127,23 +129,6 @@ export function ProductForm({
                     <Input placeholder="Enter barcode" {...field} />
                   </FormControl>
 
-                  {/* <Button
-                    type="button"
-                    variant="outline"
-                    disabled={!!initialData}
-                    className="
-            shrink-0
-            cursor-pointer
-            rounded-xl
-            disabled:cursor-not-allowed
-            disabled:opacity-50
-            disabled:bg-muted
-          "
-                    onClick={() => setScannerOpen(true)}
-                  >
-                    <ScanBarcode className="h-5 w-5" />
-                    Scan
-                  </Button> */}
                 </div>
 
                 <FormMessage />
@@ -301,21 +286,6 @@ export function ProductForm({
           </Button>
         </form>
       </Form>
-      {/* {scannerOpen && (
-        <BarcodeScannerDialog
-          open={scannerOpen}
-          onOpenChange={setScannerOpen}
-          onDetected={(barcode) => {
-            console.log("barcode ----->>> ", barcode);
-            form.setValue("barcodeNumber", barcode, {
-              shouldValidate: true,
-              shouldDirty: true,
-            });
-
-            toast.success(`Barcode detected successfully: ${barcode}`);
-          }}
-        />
-      )} */}
     </>
   );
 }

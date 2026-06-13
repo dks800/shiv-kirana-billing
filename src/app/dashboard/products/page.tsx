@@ -31,12 +31,21 @@ import { DeleteProductDialog } from "@/components/products/delete-product-dialog
 import { useDashboardData } from "@/context/dashboard-data-context";
 
 export default function ProductsPage() {
-  const { products, productsLoading } = useDashboardData();
+  const {
+    products,
+    productsLoading,
+    addOptimisticProduct,
+    removeOptimisticProduct,
+    replaceOptimisticProduct,
+  } = useDashboardData();
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [addInitialValues, setAddInitialValues] = useState<
+    ProductFormValues | undefined
+  >();
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
@@ -69,35 +78,57 @@ export default function ProductsPage() {
   */
 
   async function handleAddUpdateProduct(values: ProductFormValues) {
+    const data = {
+      barcodeNumber: values.barcodeNumber,
+      name: values.name,
+      hsnCode: values.hsnCode,
+      purchasePrice: values.purchasePrice,
+      salePrice: values.salePrice,
+      gstRate: values.gstRate,
+      unit: values.unit,
+    };
+
+    if (!selectedProduct) {
+      const temporaryId = `pending-${Date.now()}`;
+      const optimisticProduct: Product = {
+        id: temporaryId,
+        ...data,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      addOptimisticProduct(optimisticProduct);
+      setOpen(false);
+      setAddInitialValues(undefined);
+      toast.success("Product added successfully.");
+
+      createProduct(data)
+        .then((id) => {
+          replaceOptimisticProduct(temporaryId, {
+            ...optimisticProduct,
+            id,
+          });
+        })
+        .catch((error) => {
+          console.error("Failed to add product:", error);
+          removeOptimisticProduct(temporaryId);
+          setAddInitialValues(values);
+          setOpen(true);
+          toast.error("Failed to add product. Please try again.");
+        });
+
+      return;
+    }
+
     try {
       setIsSubmitting(true);
-      const data = {
-        barcodeNumber: values.barcodeNumber,
-        name: values.name,
-        hsnCode: values.hsnCode,
-        purchasePrice: values.purchasePrice,
-        salePrice: values.salePrice,
-        gstRate: values.gstRate,
-        unit: values.unit,
-      };
-      if (selectedProduct) {
-        await updateProduct(selectedProduct.id!, data);
-      } else {
-        await createProduct(data);
-      }
+      await updateProduct(selectedProduct.id!, data);
       setOpen(false);
       setSelectedProduct(null);
-      toast.success(
-        `Product ${selectedProduct ? "updated" : "added"} successfully.`,
-      );
+      toast.success("Product updated successfully.");
     } catch (error) {
-      console.log(
-        "Failed to " + (selectedProduct ? "update" : "add") + " product:",
-        error,
-      );
-      toast.error(
-        `Failed to ${selectedProduct ? "update" : "add"} product. Please try again.`,
-      );
+      console.error("Failed to update product:", error);
+      toast.error("Failed to update product. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -142,6 +173,7 @@ export default function ProductsPage() {
   };
   const handleEditProduct = (product: Product) => {
     setSelectedProduct(product);
+    setAddInitialValues(undefined);
     setOpen(true);
   };
 
@@ -150,6 +182,7 @@ export default function ProductsPage() {
 
     if (!nextOpen) {
       setSelectedProduct(null);
+      setAddInitialValues(undefined);
     }
   };
 
@@ -174,7 +207,11 @@ export default function ProductsPage() {
           <DialogTrigger
             render={
               <Button
-              className="
+                onClick={() => {
+                  setSelectedProduct(null);
+                  setAddInitialValues(undefined);
+                }}
+               className="
                 h-11
                 w-full
                 gap-2
@@ -212,6 +249,7 @@ export default function ProductsPage() {
               onSubmit={handleAddUpdateProduct}
               isLoading={isSubmitting}
               initialData={selectedProduct!}
+              initialValues={addInitialValues}
             />
           </DialogContent>
         </Dialog>
@@ -295,7 +333,11 @@ export default function ProductsPage() {
             </p>
 
             <Button
-              onClick={() => setOpen(true)}
+              onClick={() => {
+                setSelectedProduct(null);
+                setAddInitialValues(undefined);
+                setOpen(true);
+              }}
               className="
                 mt-6
                 h-11

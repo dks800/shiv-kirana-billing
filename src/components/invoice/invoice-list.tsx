@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Fuse from "fuse.js";
-import { Download, Filter, Search } from "lucide-react";
+import { Download, Filter, Printer, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { InvoiceCard } from "./invoice-card";
 import { InvoiceEmptyState } from "./invoice-empty-state";
@@ -11,6 +11,7 @@ import {Loader} from "../ui/loader";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { Button } from "@/components/ui/button";
 import { downloadInvoiceListPdf } from "@/lib/exports/invoice-list-pdf";
+import { downloadSelectedInvoicesPrintPdf } from "@/lib/exports/invoice-print-pdf";
 import toast from "react-hot-toast";
 import {
   getFinancialYear,
@@ -19,17 +20,20 @@ import {
 } from "@/lib/invoice.utils";
 import { FilterModal } from "./filter-modal";
 import { useDashboardData } from "@/context/dashboard-data-context";
+import { PaymentMode } from "@/types/invoice.types";
 
 interface InvoiceFilters {
   financialYear: string;
   fromDate: string;
   toDate: string;
+  paymentMode: "" | PaymentMode;
 }
 
 const emptyFilters: InvoiceFilters = {
   financialYear: "",
   fromDate: "",
   toDate: "",
+  paymentMode: "",
 };
 
 export function InvoiceList() {
@@ -39,6 +43,8 @@ export function InvoiceList() {
   const [filters, setFilters] = useState<InvoiceFilters>(emptyFilters);
   const [draftFilters, setDraftFilters] =
     useState<InvoiceFilters>(emptyFilters);
+  const [selectedInvoiceIds, setSelectedInvoiceIds] = useState<string[]>([]);
+  const [printingSelected, setPrintingSelected] = useState(false);
   const isMobile = useIsMobile();
 
   const financialYearOptions = useMemo(() => {
@@ -70,6 +76,10 @@ export function InvoiceList() {
         return false;
       }
 
+      if (filters.paymentMode && invoice.paymentMode !== filters.paymentMode) {
+        return false;
+      }
+
       if (fromDate || toDate) {
         const invoiceDate = toInvoiceDate(invoice.invoiceDate);
 
@@ -98,6 +108,7 @@ export function InvoiceList() {
         "invoiceNumber",
         "customerName",
         "financialYear",
+        "paymentMode",
         "subtotal",
         "totalGST",
         "grandTotal",
@@ -108,6 +119,23 @@ export function InvoiceList() {
 
     return fuse.search(search).map((result) => result.item);
   }, [filters, search, invoices]);
+
+  const selectableInvoiceIds = useMemo(() => {
+    return filteredInvoices
+      .map((invoice) => invoice.id)
+      .filter(Boolean) as string[];
+  }, [filteredInvoices]);
+
+  const selectedInvoices = useMemo(() => {
+    const selectedIds = new Set(selectedInvoiceIds);
+    return filteredInvoices.filter(
+      (invoice) => invoice.id && selectedIds.has(invoice.id),
+    );
+  }, [filteredInvoices, selectedInvoiceIds]);
+
+  const allFilteredInvoicesSelected =
+    selectableInvoiceIds.length > 0 &&
+    selectableInvoiceIds.every((id) => selectedInvoiceIds.includes(id));
 
   function handleOpenFilters() {
     setDraftFilters(filters);
@@ -135,6 +163,41 @@ export function InvoiceList() {
     toast.success("Invoice list downloaded");
   }
 
+  function handleToggleInvoiceSelection(invoiceId: string) {
+    setSelectedInvoiceIds((currentIds) =>
+      currentIds.includes(invoiceId)
+        ? currentIds.filter((id) => id !== invoiceId)
+        : [...currentIds, invoiceId],
+    );
+  }
+
+  function handleToggleSelectAllInvoices() {
+    setSelectedInvoiceIds(
+      allFilteredInvoicesSelected ? [] : selectableInvoiceIds,
+    );
+  }
+
+  function handlePrintSelectedInvoices() {
+    if (!selectedInvoices.length || printingSelected) {
+      return;
+    }
+
+    try {
+      setPrintingSelected(true);
+      downloadSelectedInvoicesPrintPdf(selectedInvoices);
+      toast.success(`${selectedInvoices.length} invoice PDF downloaded`);
+    } catch (error) {
+      console.error(error);
+      toast.error(
+        `Failed to print selected invoices - ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
+      );
+    } finally {
+      setPrintingSelected(false);
+    }
+  }
+
   if (invoicesLoading) {
     return (
         <Loader />
@@ -143,8 +206,8 @@ export function InvoiceList() {
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-2 md:flex-row md:items-center">
-        <div className="relative flex-1">
+      <div className="space-y-2 md:flex md:items-center md:gap-2 md:space-y-0">
+        <div className="relative w-full md:flex-1">
           <Search
             className="
               absolute
@@ -161,30 +224,53 @@ export function InvoiceList() {
             placeholder="Search invoice, customer, phone..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
+            className="w-full pl-9"
           />
         </div>
 
-        <div className="flex gap-2">
+        <div className="grid grid-cols-3 gap-2 md:flex md:items-center md:justify-end">
+          <span className="hidden rounded-md border bg-muted/30 px-2 py-1 text-xs text-muted-foreground md:inline-flex">
+            {selectedInvoices.length} selected
+          </span>
+
           <Button
             type="button"
             variant="outline"
-            className="cursor-pointer hover:bg-success/20 bg-success/5 text-success border-success/30"
-            onClick={handleExportInvoiceList}
-            disabled={!filteredInvoices.length}
+            className="min-w-0 cursor-pointer whitespace-nowrap px-2 hover:bg-primary/10"
+            onClick={handlePrintSelectedInvoices}
+            disabled={!selectedInvoices.length || printingSelected}
           >
-            <Download className="h-4 w-4" />
-            {isMobile ? "Export" : "Export List"}
+            <Printer className="h-4 w-4 shrink-0" />
+            <span className="truncate">
+              {printingSelected
+                ? "Printing..."
+                : isMobile
+                  ? "Print"
+                  : "Print Selected"}
+            </span>
           </Button>
 
           <Button
             type="button"
             variant="outline"
-            className="cursor-pointer hover:bg-primary/10"
+            className="min-w-0 cursor-pointer whitespace-nowrap border-success/30 bg-success/5 px-2 text-success hover:bg-success/20"
+            onClick={handleExportInvoiceList}
+            disabled={!filteredInvoices.length}
+          >
+            <Download className="h-4 w-4 shrink-0" />
+            <span className="truncate">{isMobile ? "Export" : "Export List"}</span>
+          </Button>
+
+          <Button
+            type="button"
+            variant="outline"
+            className="min-w-0 cursor-pointer whitespace-nowrap px-2 hover:bg-primary/10"
             onClick={handleOpenFilters}
           >
-            <Filter className="h-4 w-4" />
-            {activeFilterCount ? `Filters (${activeFilterCount})` : "Filters"}
+            <Filter className="h-4 w-4 shrink-0" />
+            <span className="truncate">
+              {activeFilterCount ? `Filters (${activeFilterCount})` : "Filters"}
+            </span>
           </Button>
         </div>
       </div>
@@ -201,6 +287,13 @@ export function InvoiceList() {
         />
       ) : null}
 
+      {filteredInvoices.length > 0 && isMobile ? (
+        <div className="flex items-center justify-between rounded-md border bg-muted/30 px-3 py-2 text-xs text-muted-foreground md:hidden">
+          <span>{selectedInvoices.length} selected</span>
+          <span>{filteredInvoices.length} invoices</span>
+        </div>
+      ) : null}
+
       {filteredInvoices.length === 0 ? (
         <InvoiceEmptyState
           search={search}
@@ -210,12 +303,25 @@ export function InvoiceList() {
       ) : isMobile ? (
         <div className="space-y-3 md:hidden">
           {filteredInvoices.map((invoice) => (
-            <InvoiceCard key={invoice.id} invoice={invoice} />
+            <InvoiceCard
+              key={invoice.id}
+              invoice={invoice}
+              isSelected={Boolean(
+                invoice.id && selectedInvoiceIds.includes(invoice.id),
+              )}
+              onToggleSelection={handleToggleInvoiceSelection}
+            />
           ))}
         </div>
       ) : (
         <div className="hidden md:block">
-          <InvoiceTable invoices={filteredInvoices} />
+          <InvoiceTable
+            invoices={filteredInvoices}
+            selectedInvoiceIds={selectedInvoiceIds}
+            allInvoicesSelected={allFilteredInvoicesSelected}
+            onToggleInvoiceSelection={handleToggleInvoiceSelection}
+            onToggleSelectAllInvoices={handleToggleSelectAllInvoices}
+          />
         </div>
       )}
     </div>

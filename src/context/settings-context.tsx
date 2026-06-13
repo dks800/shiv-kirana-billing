@@ -15,15 +15,17 @@ import {
   saveSettings,
   subscribeToSettings,
 } from "@/services/settings.service";
-import { setActiveSettings } from "@/lib/settings-runtime";
-import { AppSettings } from "@/types/settings.types";
+import { mergeSettings, setActiveSettings } from "@/lib/settings-runtime";
+import { AppSettings, MutableAppSettings } from "@/types/settings.types";
 import { useTheme } from "@/context/theme-context";
+
+type SettingsUpdate = Partial<MutableAppSettings>;
 
 type SettingsContextType = {
   settings: AppSettings;
   loading: boolean;
   reloadSettings: () => Promise<AppSettings>;
-  updateSettings: (nextSettings: AppSettings) => Promise<AppSettings>;
+  updateSettings: (updates: SettingsUpdate) => Promise<AppSettings>;
 };
 
 const SettingsContext = createContext<SettingsContextType | null>(null);
@@ -55,11 +57,17 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   }, [applySettings]);
 
   const updateSettings = useCallback(
-    async (nextSettings: AppSettings) => {
-      await saveSettings(nextSettings);
+    async (updates: SettingsUpdate) => {
+      await saveSettings(updates);
+      const nextSettings = mergeSettings({
+        ...settings,
+        ...updates,
+        businessProfile: settings.businessProfile,
+      });
+
       return applySettings(nextSettings);
     },
-    [applySettings],
+    [applySettings, settings],
   );
 
   useEffect(() => {

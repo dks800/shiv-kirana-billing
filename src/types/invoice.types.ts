@@ -1,5 +1,7 @@
 ﻿import { Timestamp } from "firebase/firestore";
 
+export type PaymentMode = "Cash" | "UPI";
+
 export interface InvoiceItem {
   productId: string;
   name: string;
@@ -25,6 +27,7 @@ export interface Invoice {
   customerGSTIN?: string;
   customerAddress?: string;
   customerPhone?: string;
+  paymentMode?: PaymentMode;
   items: InvoiceItem[];
   subtotal: number;
   totalCGST: number;

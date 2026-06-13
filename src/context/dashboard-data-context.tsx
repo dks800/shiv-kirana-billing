@@ -2,6 +2,7 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -18,6 +19,9 @@ type DashboardDataContextType = {
   invoicesLoading: boolean;
   products: Product[];
   productsLoading: boolean;
+  addOptimisticProduct: (product: Product) => void;
+  removeOptimisticProduct: (id: string) => void;
+  replaceOptimisticProduct: (temporaryId: string, product: Product) => void;
 };
 
 const DashboardDataContext = createContext<DashboardDataContextType | null>(
@@ -33,6 +37,32 @@ export function DashboardDataProvider({
   const [products, setProducts] = useState<Product[]>([]);
   const [invoicesLoading, setInvoicesLoading] = useState(true);
   const [productsLoading, setProductsLoading] = useState(true);
+
+  const addOptimisticProduct = useCallback((product: Product) => {
+    setProducts((currentProducts) => [
+      product,
+      ...currentProducts.filter((item) => item.id !== product.id),
+    ]);
+  }, []);
+
+  const removeOptimisticProduct = useCallback((id: string) => {
+    setProducts((currentProducts) =>
+      currentProducts.filter((product) => product.id !== id),
+    );
+  }, []);
+
+  const replaceOptimisticProduct = useCallback(
+    (temporaryId: string, product: Product) => {
+      setProducts((currentProducts) => {
+        const withoutDuplicates = currentProducts.filter(
+          (item) => item.id !== temporaryId && item.id !== product.id,
+        );
+
+        return [product, ...withoutDuplicates];
+      });
+    },
+    [],
+  );
 
   useEffect(() => {
     const unsubscribeInvoices = subscribeToInvoices(
@@ -69,8 +99,19 @@ export function DashboardDataProvider({
       invoicesLoading,
       products,
       productsLoading,
+      addOptimisticProduct,
+      removeOptimisticProduct,
+      replaceOptimisticProduct,
     }),
-    [invoices, invoicesLoading, products, productsLoading],
+    [
+      invoices,
+      invoicesLoading,
+      products,
+      productsLoading,
+      addOptimisticProduct,
+      removeOptimisticProduct,
+      replaceOptimisticProduct,
+    ],
   );
 
   return (

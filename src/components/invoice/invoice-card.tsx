@@ -13,6 +13,7 @@ import {
 import { Invoice } from "@/types/invoice.types";
 import { formatIndianCurrency, formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   handleInvoiceEdit,
   handleInvoiceView,
@@ -23,9 +24,15 @@ import { deleteInvoice } from "@/services/invoice.service";
 
 interface InvoiceCardProps {
   invoice: Invoice;
+  isSelected?: boolean;
+  onToggleSelection?: (invoiceId: string) => void;
 }
 
-export function InvoiceCard({ invoice }: InvoiceCardProps) {
+export function InvoiceCard({
+  invoice,
+  isSelected = false,
+  onToggleSelection,
+}: InvoiceCardProps) {
   const router = useRouter();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [printing, setPrinting] = useState(false);
@@ -52,10 +59,21 @@ export function InvoiceCard({ invoice }: InvoiceCardProps) {
     setDeleteOpen(true);
   };
 
+  function handleCardClick(event: MouseEvent<HTMLDivElement>) {
+    if (
+      event.target instanceof Element &&
+      event.target.closest("[data-invoice-selection]")
+    ) {
+      return;
+    }
+
+    handleInvoiceView(invoice.id!, router);
+  }
+
   return (
     <>
       <div
-        onClick={() => handleInvoiceView(invoice.id!, router)}
+        onClick={handleCardClick}
         className="
         cursor-pointer
         rounded-xl
@@ -66,26 +84,51 @@ export function InvoiceCard({ invoice }: InvoiceCardProps) {
         shadow-sm
         transition
         active:scale-[0.98]
+        data-[state=selected]:bg-muted/50
       "
+        data-state={isSelected ? "selected" : undefined}
       >
         <div className="flex items-start justify-between gap-3">
-          <div>
-            <div className="flex gap-2">
-              <div className="flex items-center gap-2">
-                <ReceiptText className="h-4 w-4 text-muted-foreground" />
-                <p className="text-sm font-semibold">{invoice.invoiceNumber}</p>
+          <div className="flex min-w-0 gap-3">
+            {onToggleSelection ? (
+              <div
+                data-invoice-selection
+                onClick={(event) => event.stopPropagation()}
+                onPointerDown={(event) => event.stopPropagation()}
+              >
+                <Checkbox
+                  checked={isSelected}
+                  onCheckedChange={() => onToggleSelection(invoice.id!)}
+                  onClick={(event) => event.stopPropagation()}
+                  className="mt-1 cursor-pointer"
+                  aria-label={`Select invoice ${invoice.invoiceNumber}`}
+                />
               </div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Calendar className="h-4 w-4" />
-                <span className="text-xs text-muted-foreground">
-                  {createdDate}
-                </span>
-              </div>
-            </div>
+            ) : null}
 
-            <p className="mt-1 text-sm text-muted-foreground">
-              {invoice?.customerName || invoice.totalItems + " items"}
-            </p>
+            <div className="min-w-0">
+              <div className="flex gap-2">
+                <div className="flex items-center gap-2">
+                  <ReceiptText className="h-4 w-4 text-muted-foreground" />
+                  <p className="text-sm font-semibold">
+                    {invoice.invoiceNumber}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Calendar className="h-4 w-4" />
+                  <span className="text-xs text-muted-foreground">
+                    {createdDate}
+                  </span>
+                </div>
+              </div>
+
+              <p className="mt-1 text-sm text-muted-foreground">
+                {invoice?.customerName || invoice.totalItems + " items"}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Payment: {invoice.paymentMode || "-"}
+              </p>
+            </div>
           </div>
 
           <div className="text-right">

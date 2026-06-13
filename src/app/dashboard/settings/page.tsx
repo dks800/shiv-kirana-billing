@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { AppSettings } from "@/types/settings.types";
+import { AppSettings, MutableAppSettings } from "@/types/settings.types";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@radix-ui/react-label";
@@ -21,6 +21,37 @@ import { useSettings } from "@/context/settings-context";
 
 const hasSectionChanges = <T,>(current: T, applied: T) =>
   JSON.stringify(current) !== JSON.stringify(applied);
+const IFSC_PATTERN = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+type SettingsUpdate = Partial<MutableAppSettings>;
+type BankAccountErrors = Partial<
+  Record<keyof MutableAppSettings["bankAccount"], string>
+>;
+
+function validateBankAccount(bankAccount: MutableAppSettings["bankAccount"]) {
+  const nextErrors: BankAccountErrors = {};
+
+  if (!bankAccount.bankName.trim()) {
+    nextErrors.bankName = "Bank name is required.";
+  }
+
+  if (!bankAccount.accountNumber.trim()) {
+    nextErrors.accountNumber = "Account number is required.";
+  }
+
+  const ifscCode = bankAccount.ifscCode.trim().toUpperCase();
+
+  if (!ifscCode) {
+    nextErrors.ifscCode = "IFSC code is required.";
+  } else if (!IFSC_PATTERN.test(ifscCode)) {
+    nextErrors.ifscCode = "Enter a valid IFSC code, for example SBIN0001234.";
+  }
+
+  if (!bankAccount.branch.trim()) {
+    nextErrors.branch = "Branch is required.";
+  }
+
+  return nextErrors;
+}
 
 function ChangeNote({ show }: { show: boolean }) {
   const { theme } = useTheme();
@@ -78,22 +109,42 @@ function SettingsForm({
   updateSettings,
 }: {
   activeSettings: AppSettings;
-  updateSettings: (nextSettings: AppSettings) => Promise<AppSettings>;
+  updateSettings: (updates: SettingsUpdate) => Promise<AppSettings>;
 }) {
-  const [settings, setSettings] = useState<AppSettings>(activeSettings);
-  console.log("settings --->>", settings);
-  const [appliedSettings, setAppliedSettings] =
-    useState<AppSettings>(activeSettings);
-
+  const [settings, setSettings] = useState<MutableAppSettings>({
+    bankAccount: activeSettings.bankAccount,
+    pdf: activeSettings.pdf,
+    preferences: activeSettings.preferences,
+  });
+  const [appliedSettings, setAppliedSettings] = useState<MutableAppSettings>({
+    bankAccount: activeSettings.bankAccount,
+    pdf: activeSettings.pdf,
+    preferences: activeSettings.preferences,
+  });
+  const [bankAccountErrors, setBankAccountErrors] =
+    useState<BankAccountErrors>({});
   const [saving, setSaving] = useState(false);
+  const [savingBankAccount, setSavingBankAccount] = useState(false);
   const { setTheme } = useTheme();
 
   async function handleSave() {
     try {
       setSaving(true);
-      const savedSettings = await updateSettings(settings);
-      setSettings(savedSettings);
-      setAppliedSettings(savedSettings);
+      const savedSettings = await updateSettings({
+        pdf: settings.pdf,
+        preferences: settings.preferences,
+      });
+      const nextMutableSettings = {
+        bankAccount: settings.bankAccount,
+        pdf: savedSettings.pdf,
+        preferences: savedSettings.preferences,
+      };
+      setSettings(nextMutableSettings);
+      setAppliedSettings({
+        bankAccount: savedSettings.bankAccount,
+        pdf: savedSettings.pdf,
+        preferences: savedSettings.preferences,
+      });
       toast.success("Settings applied successfully!");
     } catch (error) {
       toast.error(
@@ -103,6 +154,46 @@ function SettingsForm({
       );
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleSaveBankAccount() {
+    const nextBankAccount = {
+      bankName: settings.bankAccount.bankName.trim(),
+      accountNumber: settings.bankAccount.accountNumber.trim(),
+      ifscCode: settings.bankAccount.ifscCode.trim().toUpperCase(),
+      branch: settings.bankAccount.branch.trim(),
+    };
+    const nextErrors = validateBankAccount(nextBankAccount);
+
+    setBankAccountErrors(nextErrors);
+
+    if (Object.keys(nextErrors).length > 0) {
+      toast.error("Please fix the bank account details before saving.");
+      return;
+    }
+
+    try {
+      setSavingBankAccount(true);
+      const savedSettings = await updateSettings({
+        bankAccount: nextBankAccount,
+      });
+      const nextMutableSettings = {
+        bankAccount: savedSettings.bankAccount,
+        pdf: savedSettings.pdf,
+        preferences: savedSettings.preferences,
+      };
+      setSettings(nextMutableSettings);
+      setAppliedSettings(nextMutableSettings);
+      toast.success("Bank account information saved successfully!");
+    } catch (error) {
+      toast.error(
+        `Failed to save bank account information - ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
+      );
+    } finally {
+      setSavingBankAccount(false);
     }
   }
 
@@ -117,146 +208,166 @@ function SettingsForm({
         <div className="grid gap-4 md:grid-cols-3">
           <Input
             placeholder="Business Name"
-            value={settings.businessProfile.businessName}
-            disabled={!!settings.businessProfile.businessName}
-            // onChange={(e) =>
-            //   setSettings({
-            //     ...settings,
-            //     businessProfile: {
-            //       ...settings.businessProfile,
-            //       businessName: e.target.value,
-            //     },
-            //   })
-            // }
+            value={activeSettings.businessProfile.businessName}
+            disabled
           />
 
           <Input
             placeholder="Proprietor Name"
-            value={settings.businessProfile.proprietorName}
-            disabled={!!settings.businessProfile.proprietorName}
-            // onChange={(e) =>
-            //   setSettings({
-            //     ...settings,
-            //     businessProfile: {
-            //       ...settings.businessProfile,
-            //       proprietorName: e.target.value,
-            //     },
-            //   })
-            // }
+            value={activeSettings.businessProfile.proprietorName}
+            disabled
           />
 
           <Input
             placeholder="GSTIN"
-            value={settings.businessProfile.gstin}
-            disabled={!!settings.businessProfile.gstin}
-            // onChange={(e) =>
-            //   setSettings({
-            //     ...settings,
-            //     businessProfile: {
-            //       ...settings.businessProfile,
-            //       gstin: e.target.value,
-            //     },
-            //   })
-            // }
+            value={activeSettings.businessProfile.gstin}
+            disabled
           />
 
           <Input
             placeholder="Phone"
-            value={settings.businessProfile.phone}
-            disabled={!!settings.businessProfile.phone}
-            // onChange={(e) =>
-            //   setSettings({
-            //     ...settings,
-            //     businessProfile: {
-            //       ...settings.businessProfile,
-            //       phone: e.target.value,
-            //     },
-            //   })
-            // }
+            value={activeSettings.businessProfile.phone}
+            disabled
           />
 
           <Input
             placeholder="Email"
-            value={settings.businessProfile.email}
-            disabled={!!settings.businessProfile.email}
-            // onChange={(e) =>
-            //   setSettings({
-            //     ...settings,
-            //     businessProfile: {
-            //       ...settings.businessProfile,
-            //       email: e.target.value,
-            //     },
-            //   })
-            // }
+            value={activeSettings.businessProfile.email}
+            disabled
           />
 
           <Input
             placeholder="City"
-            value={settings.businessProfile.city}
-            disabled={!!settings.businessProfile.city}
-            // onChange={(e) =>
-            //   setSettings({
-            //     ...settings,
-            //     businessProfile: {
-            //       ...settings.businessProfile,
-            //       city: e.target.value,
-            //     },
-            //   })
-            // }
+            value={activeSettings.businessProfile.city}
+            disabled
           />
 
           <Input
             placeholder="State"
-            value={settings.businessProfile.state}
-            disabled={!!settings.businessProfile.state}
-            // onChange={(e) =>
-            //   setSettings({
-            //     ...settings,
-            //     businessProfile: {
-            //       ...settings.businessProfile,
-            //       state: e.target.value,
-            //     },
-            //   })
-            // }
+            value={activeSettings.businessProfile.state}
+            disabled
           />
 
           <Input
             placeholder="Pincode"
-            value={settings.businessProfile.pincode}
-            disabled={!!settings.businessProfile.pincode}
-            // onChange={(e) =>
-            //   setSettings({
-            //     ...settings,
-            //     businessProfile: {
-            //       ...settings.businessProfile,
-            //       pincode: e.target.value,
-            //     },
-            //   })
-            // }
+            value={activeSettings.businessProfile.pincode}
+            disabled
           />
         </div>
 
         <Textarea
           className="mt-4"
           placeholder="Business Address"
-          value={settings.businessProfile.address}
-          disabled={!!settings.businessProfile.address}
-          // onChange={(e) =>
-          //   setSettings({
-          //     ...settings,
-          //     businessProfile: {
-          //       ...settings.businessProfile,
-          //       address: e.target.value,
-          //     },
-          //   })
-          // }
+          value={activeSettings.businessProfile.address}
+          disabled
         />
+      </div>
+
+      <div className="rounded-xl border bg-card text-card-foreground p-4 md:p-6">
+        <p className="text-2xl font-bold my-2">Bank Account Information</p>
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <Label>Bank Name</Label>
+            <Input
+              placeholder="Bank Name"
+              value={settings.bankAccount.bankName}
+              onChange={(e) =>
+                setSettings({
+                  ...settings,
+                  bankAccount: {
+                    ...settings.bankAccount,
+                    bankName: e.target.value,
+                  },
+                })
+              }
+            />
+            {bankAccountErrors.bankName ? (
+              <p className="mt-1 text-sm text-destructive">
+                {bankAccountErrors.bankName}
+              </p>
+            ) : null}
+          </div>
+
+          <div>
+            <Label>Account Number</Label>
+            <Input
+              placeholder="Account Number"
+              value={settings.bankAccount.accountNumber}
+              onChange={(e) =>
+                setSettings({
+                  ...settings,
+                  bankAccount: {
+                    ...settings.bankAccount,
+                    accountNumber: e.target.value,
+                  },
+                })
+              }
+            />
+            {bankAccountErrors.accountNumber ? (
+              <p className="mt-1 text-sm text-destructive">
+                {bankAccountErrors.accountNumber}
+              </p>
+            ) : null}
+          </div>
+
+          <div>
+            <Label>IFSC Code</Label>
+            <Input
+              placeholder="IFSC Code"
+              value={settings.bankAccount.ifscCode}
+              onChange={(e) =>
+                setSettings({
+                  ...settings,
+                  bankAccount: {
+                    ...settings.bankAccount,
+                    ifscCode: e.target.value.toUpperCase(),
+                  },
+                })
+              }
+            />
+            {bankAccountErrors.ifscCode ? (
+              <p className="mt-1 text-sm text-destructive">
+                {bankAccountErrors.ifscCode}
+              </p>
+            ) : null}
+          </div>
+
+          <div>
+            <Label>Branch</Label>
+            <Input
+              placeholder="Branch"
+              value={settings.bankAccount.branch}
+              onChange={(e) =>
+                setSettings({
+                  ...settings,
+                  bankAccount: {
+                    ...settings.bankAccount,
+                    branch: e.target.value,
+                  },
+                })
+              }
+            />
+            {bankAccountErrors.branch ? (
+              <p className="mt-1 text-sm text-destructive">
+                {bankAccountErrors.branch}
+              </p>
+            ) : null}
+          </div>
+        </div>
+
         <ChangeNote
           show={hasSectionChanges(
-            settings.businessProfile,
-            appliedSettings.businessProfile,
+            settings.bankAccount,
+            appliedSettings.bankAccount,
           )}
         />
+        <button
+          onClick={handleSaveBankAccount}
+          disabled={savingBankAccount}
+          className="mt-4 rounded-full bg-primary px-4 py-2 text-primary-foreground cursor-pointer hover:bg-primary/80 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {savingBankAccount ? "Saving..." : "Save Bank Account"}
+        </button>
       </div>
 
       {/* PDF */}
@@ -312,14 +423,6 @@ function SettingsForm({
             <Select
               value={settings.preferences.theme}
               onValueChange={(value) => {
-                // setSettings({
-                //   ...settings,
-                //   preferences: {
-                //     ...settings.preferences,
-                //     theme: value as "light" | "dark",
-                //   },
-                // });
-
                 const theme = value as "light" | "dark";
 
                 setSettings({
@@ -392,7 +495,7 @@ function SettingsForm({
       <div>
         <button
           onClick={handleSave}
-          // disabled={saving}
+          disabled={saving}
           className="rounded-full bg-primary px-4 py-2 text-primary-foreground cursor-pointer hover:bg-primary/80 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {saving ? "Saving..." : "Save Settings"}
