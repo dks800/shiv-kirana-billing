@@ -8,12 +8,13 @@ import {
 
 import { AppSettings, MutableAppSettings } from "@/types/settings.types";
 import { db } from "@/lib/firebase/config";
-import { fallbackSettings, mergeSettings } from "@/lib/settings-runtime";
+import { DEFAULT_SETTINGS } from "@/lib/settings-constants";
+import { mergeSettings } from "@/lib/settings-runtime";
 
 const SETTINGS_DOC_ID = "appSettings";
 const IFSC_PATTERN = /^[A-Z]{4}0[A-Z0-9]{6}$/;
 
-export const defaultSettings: AppSettings = fallbackSettings;
+export const defaultSettings: AppSettings = DEFAULT_SETTINGS;
 
 const settingsRef = () => doc(db, "settings", SETTINGS_DOC_ID);
 
@@ -59,14 +60,14 @@ function buildWritableSettingsUpdate(
 
   if (updates.pdf) {
     payload.pdf = {
-      ...fallbackSettings.pdf,
+      ...DEFAULT_SETTINGS.pdf,
       ...updates.pdf,
     };
   }
 
   if (updates.preferences) {
     payload.preferences = {
-      ...fallbackSettings.preferences,
+      ...DEFAULT_SETTINGS.preferences,
       ...updates.preferences,
     };
   }
