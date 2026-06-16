@@ -141,7 +141,7 @@ export function ProductsMobileList({
                   >
                     <div className="flex w-full items-center justify-between gap-4">
                       <div className="min-w-0 text-left">
-                        <p className="truncate font-medium">
+                        <p className="font-medium">
                           {product.name}
                         </p>
 

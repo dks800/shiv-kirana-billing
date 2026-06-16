@@ -12,6 +12,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Trash2 } from "lucide-react";
 
+import type { ReactNode } from "react";
+
 interface DeleteProductDialogProps {
   open: boolean;
 
@@ -19,7 +21,7 @@ interface DeleteProductDialogProps {
 
   title?: string;
 
-  description?: string;
+  description?: ReactNode;
 
   isLoading?: boolean;
 

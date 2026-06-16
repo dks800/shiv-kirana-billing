@@ -113,7 +113,7 @@ export function ProductsTable({
 
         cell: ({ row }) => (
           <div>
-            <p className="font-medium max-w-[300px] truncate">
+            <p className="font-medium max-w-[1000px] truncate">
               {row.original.name}
             </p>
 

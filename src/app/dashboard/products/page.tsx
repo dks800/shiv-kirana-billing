@@ -417,7 +417,11 @@ export default function ProductsPage() {
           onConfirm={confirmDeleteProduct}
           isLoading={isDeleting}
           title="Delete Product"
-          description={`Are you sure you want to delete "${selectedProduct?.name}"? This action cannot be undone.`}
+          description={
+            <span>
+              Are you sure you want to delete <strong>{`"${selectedProduct?.name}"?`}</strong> This action cannot be undone.
+            </span>
+          }
         />
       )}
       {bulkDeleteOpen && (
@@ -430,7 +434,11 @@ export default function ProductsPage() {
           }}
           isLoading={isDeleting}
           title="Delete Selected Products"
-          description={`Are you sure you want to delete ${selectedRows.length} selected products? This action cannot be undone.`}
+          description={
+            <span>
+              Are you sure you want to delete <strong>{selectedRows.length}</strong> selected products? This action cannot be undone.
+            </span>
+          }
         />
       )}
     </div>

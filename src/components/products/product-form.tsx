@@ -119,7 +119,6 @@ export function ProductForm({
           <FormField
             control={form.control}
             name="barcodeNumber"
-            disabled={!!initialData}
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Barcode Number</FormLabel>
