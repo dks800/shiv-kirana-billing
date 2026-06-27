@@ -52,7 +52,7 @@ export function ProductSalesReport({ rows }: { rows: ProductSalesRow[] }) {
   }));
 
   return (
-    <ReportCard title="Product-wise Sales Report" filename="product-sales" rows={exportRows}>
+    <ReportCard title="Top 20 Product-wise Sales Report" filename="product-sales" rows={exportRows}>
       <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="relative max-w-md flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -78,22 +78,22 @@ export function ProductSalesReport({ rows }: { rows: ProductSalesRow[] }) {
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead>Sr No.</TableHead>
             <TableHead>
               <span className="inline-flex items-center gap-1">
                 Product <ArrowDownUp className="h-3 w-3" />
               </span>
             </TableHead>
-            <TableHead>Category</TableHead>
             <TableHead className="text-right">Qty</TableHead>
             <TableHead className="text-right">Revenue</TableHead>
             <TableHead className="text-right">Bills</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {filteredRows.slice(0, 100).map((row) => (
+          {filteredRows.slice(0, 20).map((row, index) => (
             <TableRow key={row.productId}>
+              <TableCell className="font-medium">{index + 1}</TableCell>
               <TableCell className="font-medium">{row.productName}</TableCell>
-              <TableCell>{row.category}</TableCell>
               <TableCell className="text-right">{row.quantitySold}</TableCell>
               <TableCell className="text-right">
                 {formatCurrency(row.revenue)}

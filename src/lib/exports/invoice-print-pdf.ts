@@ -8,19 +8,21 @@ import { getActiveSettings } from "@/lib/settings-runtime";
 const page = {
   width: 210,
   height: 297,
-  marginX: 8,
-  top: 5,
-  bottom: 292,
+  marginX: 6,
+  top: 3,
+  bottom: 294,
   footerY: 295,
 };
 
 const invoiceGap = 2;
 const blockWidth = page.width - page.marginX * 2;
-const invoiceHeaderHeight = 16;
-const invoiceDetailsHeight = 11;
-const amountInWordsHeight = 5;
-const bankDetailsHeight = 11;
-const minimumSummaryHeight = 27;
+const invoiceHeaderHeight = 13;
+const invoiceDetailsHeight = 9;
+const tableHeaderHeight = 5.8;
+const quantityTotalHeight = 5;
+const amountInWordsHeight = 4;
+const bankDetailsHeight = 8;
+const minimumSummaryHeight = 20;
 
 const tableColumns = [
   { label: "SN.", x: 0, width: 7, align: "center" },
@@ -95,7 +97,7 @@ function drawFooter(doc: jsPDF, pageNumber: number, pageCount: number) {
 
 function getItemRowHeight(doc: jsPDF, item: InvoiceItem) {
   const nameLines = doc.splitTextToSize(item.name || "-", 66) as string[];
-  return Math.max(5.2, nameLines.length * 3.4 + 2);
+  return Math.max(4.4, nameLines.length * 3 + 1.4);
 }
 
 function getBankLine(settings: AppSettings) {
@@ -112,7 +114,7 @@ function getGstSummaryHeight(invoice: Invoice, settings: AppSettings) {
     return minimumSummaryHeight;
   }
 
-  return 11 + Math.max(invoice.gstSummary?.length || 0, 1) * 5;
+  return 7 + Math.max(invoice.gstSummary?.length || 0, 1) * 4;
 }
 
 function getInvoiceBlockHeight(
@@ -129,9 +131,9 @@ function getInvoiceBlockHeight(
   return (
     invoiceHeaderHeight +
     invoiceDetailsHeight +
-    7 +
+    tableHeaderHeight +
     rowsHeight +
-    6 +
+    quantityTotalHeight +
     Math.max(getGstSummaryHeight(invoice, settings), minimumSummaryHeight) +
     wordsHeight +
     bankDetailsHeight
@@ -160,11 +162,11 @@ function drawInvoiceNumberCell(
   y: number,
 ) {
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(7.4);
+  doc.setFontSize(7);
   doc.text("Invoice No.:", x, y);
-  doc.setFontSize(12);
-  doc.text(value || "-", x + 20, y + 0.8);
-  doc.setFontSize(7.4);
+  doc.setFontSize(11);
+  doc.text(value || "-", x + 18, y + 0.7);
+  doc.setFontSize(7);
 }
 
 function drawInvoiceHeader(
@@ -185,26 +187,26 @@ function drawInvoiceHeader(
   doc.rect(x, y, blockWidth, invoiceHeaderHeight);
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(13);
-  doc.text(businessName, x + blockWidth / 2, y + 5.5, { align: "center" });
+  doc.setFontSize(12);
+  doc.text(businessName, x + blockWidth / 2, y + 4.8, { align: "center" });
 
-  doc.setFontSize(7.2);
+  doc.setFontSize(6.7);
   detailLines.slice(0, 4).forEach((line, index) => {
-    doc.setFont("helvetica", index === 3 ? "bold" : "normal");
-    doc.text(line, x + blockWidth / 2, y + 9.5 + index * 3, {
+    doc.setFont("helvetica", index === 1 ? "bold" : "normal");
+    doc.text(line, x + blockWidth / 2, y + 8.5 + index * 2.6, {
       align: "center",
     });
   });
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
-  rightText(doc, "GST INVOICE", headerRightX, y + 4.8);
+  doc.setFontSize(7.5);
+  rightText(doc, "GST INVOICE", headerRightX, y + 4.2);
   doc.setFont("helvetica", "normal");
   rightText(
     doc,
     continued ? "Continued" : "Original for Buyer",
     headerRightX,
-    y + 8.6,
+    y + 7.6,
   );
 
   const detailsTop = y + invoiceHeaderHeight;
@@ -214,7 +216,7 @@ function drawInvoiceHeader(
   doc.rect(x, detailsTop, blockWidth, invoiceDetailsHeight);
   doc.line(dividerX, detailsTop, dividerX, detailsTop + invoiceDetailsHeight);
 
-  doc.setFontSize(7.4);
+  doc.setFontSize(7);
   const customerGstPhone =
     [
       invoice.customerGSTIN ? `GSTIN: ${invoice.customerGSTIN}` : "",
@@ -228,7 +230,7 @@ function drawInvoiceHeader(
     "To,",
     `${invoice.customerName || "-"}   ${customerGstPhone}`,
     x + 2,
-    detailsTop + 4.2,
+    detailsTop + 3.7,
     104,
   );
   drawSingleLineCellText(
@@ -236,7 +238,7 @@ function drawInvoiceHeader(
     "Address:",
     invoice.customerAddress || "-",
     x + 2,
-    detailsTop + 8.5,
+    detailsTop + 7.3,
     104,
   );
 
@@ -245,20 +247,20 @@ function drawInvoiceHeader(
     doc,
     String(invoice.invoiceNumber || "-"),
     invoiceX,
-    detailsTop + 4.2,
+    detailsTop + 3.7,
   );
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(7.4);
-  doc.text("Date:", invoiceX + 34, detailsTop + 4.2);
+  doc.setFontSize(7);
+  doc.text("Date:", invoiceX + 34, detailsTop + 3.7);
   doc.setFont("helvetica", "normal");
-  doc.text(formatDate(invoiceDate), invoiceX + 46, detailsTop + 4.2);
+  doc.text(formatDate(invoiceDate), invoiceX + 46, detailsTop + 3.7);
 
   drawSingleLineCellText(
     doc,
     "Payment:",
     invoice.paymentMode || "-",
     invoiceX,
-    detailsTop + 8.5,
+    detailsTop + 7.3,
     26,
   );
 
@@ -267,30 +269,30 @@ function drawInvoiceHeader(
 
 function drawTableHeader(doc: jsPDF, x: number, y: number) {
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(7.2);
-  doc.rect(x, y, blockWidth, 7);
+  doc.setFontSize(6.8);
+  doc.rect(x, y, blockWidth, tableHeaderHeight);
 
   tableColumns.forEach((column, index) => {
     if (index > 0) {
-      doc.line(x + column.x, y, x + column.x, y + 7);
+      doc.line(x + column.x, y, x + column.x, y + tableHeaderHeight);
     }
 
     if (column.align === "right") {
-      rightText(doc, column.label, x + column.x + column.width - 1.2, y + 4.8);
+      rightText(doc, column.label, x + column.x + column.width - 1.2, y + 4);
       return;
     }
 
     if (column.align === "center") {
-      doc.text(column.label, x + column.x + column.width / 2, y + 4.8, {
+      doc.text(column.label, x + column.x + column.width / 2, y + 4, {
         align: "center",
       });
       return;
     }
 
-    doc.text(column.label, x + column.x + 1.2, y + 4.8);
+    doc.text(column.label, x + column.x + 1.2, y + 4);
   });
 
-  return y + 7;
+  return y + tableHeaderHeight;
 }
 
 function drawItemRow(
@@ -305,7 +307,7 @@ function drawItemRow(
   const hsnCode = String(item.hsnCode || "-").slice(0, 8);
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(7);
+  doc.setFontSize(6.6);
   doc.rect(x, y, blockWidth, height);
 
   tableColumns.forEach((column, columnIndex) => {
@@ -314,22 +316,22 @@ function drawItemRow(
     }
   });
 
-  rightText(doc, String(index + 1), x + tableColumnRight.sn, y + 3.8);
-  doc.text(nameLines, x + 8.5, y + 3.8);
-  doc.text(hsnCode, x + tableColumnRight.hsn, y + 3.8, {
+  rightText(doc, String(index + 1), x + tableColumnRight.sn, y + 3.3);
+  doc.text(nameLines, x + 8.5, y + 3.3);
+  doc.text(hsnCode, x + tableColumnRight.hsn, y + 3.3, {
     align: "right",
   });
   rightText(
     doc,
     `${item.quantity} ${item.unit || ""}`.trim(),
     x + tableColumnRight.qty,
-    y + 3.8,
+    y + 3.3,
   );
-  rightText(doc, money(item.rate), x + tableColumnRight.rate, y + 3.8);
-  rightText(doc, money(item.taxableAmount), x + tableColumnRight.amount, y + 3.8);
-  rightText(doc, `${item.gstRate}%`, x + tableColumnRight.gstRate, y + 3.8);
-  rightText(doc, money(item.gstAmount), x + tableColumnRight.gstAmount, y + 3.8);
-  rightText(doc, money(item.totalAmount), x + tableColumnRight.netAmount, y + 3.8);
+  rightText(doc, money(item.rate), x + tableColumnRight.rate, y + 3.3);
+  rightText(doc, money(item.taxableAmount), x + tableColumnRight.amount, y + 3.3);
+  rightText(doc, `${item.gstRate}%`, x + tableColumnRight.gstRate, y + 3.3);
+  rightText(doc, money(item.gstAmount), x + tableColumnRight.gstAmount, y + 3.3);
+  rightText(doc, money(item.totalAmount), x + tableColumnRight.netAmount, y + 3.3);
 }
 
 function drawQuantityTotalRow(
@@ -344,15 +346,15 @@ function drawQuantityTotalRow(
   );
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(7.5);
-  doc.rect(x, y, blockWidth, 6);
-  doc.text("TOTAL :", x + 5, y + 4.2);
-  rightText(doc, String(totalQuantity), x + tableColumnRight.qty, y + 4.2);
-  rightText(doc, money(invoice.subtotal), x + tableColumnRight.amount, y + 4.2);
-  rightText(doc, money(invoice.totalGST), x + tableColumnRight.gstAmount, y + 4.2);
-  rightText(doc, money(invoice.grandTotal), x + tableColumnRight.netAmount, y + 4.2);
+  doc.setFontSize(7);
+  doc.rect(x, y, blockWidth, quantityTotalHeight);
+  doc.text("TOTAL :", x + 5, y + 3.6);
+  rightText(doc, String(totalQuantity), x + tableColumnRight.qty, y + 3.6);
+  rightText(doc, money(invoice.subtotal), x + tableColumnRight.amount, y + 3.6);
+  rightText(doc, money(invoice.totalGST), x + tableColumnRight.gstAmount, y + 3.6);
+  rightText(doc, money(invoice.grandTotal), x + tableColumnRight.netAmount, y + 3.6);
 
-  return y + 6;
+  return y + quantityTotalHeight;
 }
 
 function drawGstSummary(
@@ -365,20 +367,20 @@ function drawGstSummary(
   const summary = invoice.gstSummary || [];
   const rows = summary.length ? summary : [];
   const width = 120;
-  let rowY = y + 10;
+  let rowY = y + 8.8;
 
   doc.rect(x, y, width, height);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(7.3);
-  doc.text("CLASS", x + 3, y + 5);
-  rightText(doc, "SGST", x + 42, y + 5);
-  rightText(doc, "CGST", x + 68, y + 5);
-  rightText(doc, "TOTAL GST", x + 94, y + 5);
-  rightText(doc, "SALE AMT.", x + width - 4, y + 5);
-  doc.line(x, y + 7, x + width, y + 7);
+  doc.setFontSize(6.8);
+  doc.text("CLASS", x + 3, y + 4.5);
+  rightText(doc, "SGST", x + 42, y + 4.5);
+  rightText(doc, "CGST", x + 68, y + 4.5);
+  rightText(doc, "TOTAL GST", x + 94, y + 4.5);
+  rightText(doc, "SALE AMT.", x + width - 4, y + 4.5);
+  doc.line(x, y + 6, x + width, y + 6);
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(7);
+  doc.setFontSize(6.6);
 
   if (!rows.length) {
     doc.text("No GST summary available", x + 3, rowY);
@@ -391,7 +393,7 @@ function drawGstSummary(
     rightText(doc, money(row.cgstAmount), x + 68, rowY);
     rightText(doc, money(row.gstAmount), x + 94, rowY);
     rightText(doc, money(row.taxableAmount), x + width - 4, rowY);
-    rowY += 5;
+    rowY += 4;
   });
 }
 
@@ -409,24 +411,24 @@ function drawTotalsPanel(
     ["CGST Amount", money(invoice.totalCGST)],
     ["Round Off (+/-)", money(invoice.roundUp || 0)],
   ];
-  let rowY = y + 3.5;
+  let rowY = y + 3.2;
 
   doc.rect(x, y, width, height);
-  doc.setFontSize(7);
+  doc.setFontSize(6.6);
 
   rows.forEach(([label, value]) => {
     doc.setFont("helvetica", "normal");
     doc.text(label, x + 3, rowY);
     rightText(doc, value, x + width - 3, rowY);
-    rowY += 4.6;
+    rowY += 3;
   });
 
-  const grandTotalTop = y + height - 8;
-  const grandTotalTextY = grandTotalTop + 5.2;
+  const grandTotalTop = y + height - 6.6;
+  const grandTotalTextY = grandTotalTop + 4.8;
 
   doc.line(x, grandTotalTop, x + width, grandTotalTop);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
+  doc.setFontSize(9);
   doc.text("GRAND TOTAL", x + 3, grandTotalTextY);
   rightText(doc, money(invoice.grandTotal), x + width - 3, grandTotalTextY);
 }
@@ -446,23 +448,23 @@ function drawBankDetails(
   doc.line(signatureX, y, signatureX, y + bankDetailsHeight);
 
   doc.setFont("helvetica", "bolditalic");
-  doc.setFontSize(8);
-  doc.text("BANK DETAILS", x + 2, y + 4.2);
+  doc.setFontSize(7.4);
+  doc.text("BANK DETAILS", x + 2, y + 3.4);
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(7.2);
+  doc.setFontSize(6.7);
   const lines = doc.splitTextToSize(bankLine.join("   "), 116) as string[];
-  doc.text(lines.slice(0, 2), x + 2, y + 8);
+  doc.text(lines.slice(0, 2), x + 2, y + 6.4);
 
-  doc.setFontSize(8);
+  doc.setFontSize(7.2);
   const signatureNameLines = doc.splitTextToSize(
     `For, ${businessName}`,
     signatureWidth - 4,
   ) as string[];
-  doc.text(signatureNameLines.slice(0, 1), signatureX + signatureWidth / 2, y + 3.8, {
+  doc.text(signatureNameLines.slice(0, 1), signatureX + signatureWidth / 2, y + 3.2, {
     align: "center",
   });
-  doc.text("Authorised Signatory", signatureX + signatureWidth / 2, y + 9.5, {
+  doc.text("Authorised Signatory", signatureX + signatureWidth / 2, y + 6.8, {
     align: "center",
   });
 
@@ -493,7 +495,7 @@ function drawInvoiceSummary(
   drawTotalsPanel(doc, invoice, x + 120, y, panelHeight);
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(6.8);
+  doc.setFontSize(6.4);
   let nextY = y + panelHeight;
 
   if (settings.pdf.showAmountInWords) {
@@ -504,8 +506,8 @@ function drawInvoiceSummary(
 
     doc.rect(x, nextY, blockWidth, amountInWordsHeight);
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(7);
-    doc.text(amountWords.slice(0, 1), x + 2, nextY + 3.5);
+    doc.setFontSize(6.6);
+    doc.text(amountWords.slice(0, 1), x + 2, nextY + 2.9);
     nextY += amountInWordsHeight;
   }
 
@@ -538,7 +540,7 @@ function drawCompactInvoiceBlock(
       const item = invoice.items[itemStartIndex];
       const rowHeight = getItemRowHeight(doc, item);
       const reserveForSummary =
-        6 +
+        quantityTotalHeight +
         Math.max(getGstSummaryHeight(invoice, settings), minimumSummaryHeight) +
         bankDetailsHeight;
 
